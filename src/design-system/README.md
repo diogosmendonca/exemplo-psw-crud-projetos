@@ -59,14 +59,15 @@ Componentes de comportamento (fora do design system, mas parte do padrão de UX)
 | --- | --- |
 | `src/aviso/AvisoProvider.jsx` | Envolve o app (em `App.jsx`) e renderiza o toast verde no topo. Some após 5s; pausa com mouse/foco. |
 | `src/aviso/contexto.js` | Exporta `useAviso()`, que devolve `{ mostrarSucesso(texto) }`. |
-| `src/Cabecalho.jsx` | Navbar responsiva com ícone + nome por item; menu recolhe ao perder o foco. Itens definidos em `ITENS_MENU`. |
+| `src/Cabecalho.jsx` | Navbar responsiva com ícone + nome por item; menu (`react-bootstrap`) recolhe ao tocar fora, ao perder o foco e ao escolher um item. Itens definidos em `ITENS_MENU`. |
 
 ## Padrões de UX (decisões já tomadas)
 
 | Situação | Padrão |
 | --- | --- |
 | Confirmar sucesso de incluir/alterar/excluir | **Toast**: `const { mostrarSucesso } = useAviso()` e depois `mostrarSucesso('Texto.')` |
-| Confirmar exclusão | **Modal** Bootstrap (`ConfirmacaoExclusao.jsx`), nunca `window.confirm`. É rota filha de `Lista` (`<Outlet />`), para a lista e o filtro continuarem por trás |
+| Componentes interativos (modal, menu recolhível, dropdown) | Use `react-bootstrap`. **Não** use o JavaScript do Bootstrap (`data-bs-*`, `new Modal()`): ele manipula o DOM fora do React |
+| Confirmar exclusão | **Modal** do `react-bootstrap` (`ConfirmacaoExclusao.jsx`), nunca `window.confirm`. É rota filha de `Lista` (`<Outlet />`), para a lista e o filtro continuarem por trás |
 | Ordem dos botões (formulários e modais) | **Principal à esquerda, secundário à direita** (ex.: `Salvar` \| `Voltar`; `Excluir projeto` \| `Voltar`). Em `modal-footer` use `justify-content-start` |
 | Itens de menu | Ícone `lucide-react` (18px) + nome, em `ITENS_MENU` de `Cabecalho.jsx` |
 | Lista em telas < `lg` | **Cartões** (`card`); em `lg` ou mais, **tabela** (`table-responsive`) |

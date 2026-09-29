@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAviso } from './aviso/contexto.js'
 import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
-import { useProjetos } from './hooks/useProjetos.js'
+import { useMutacoesProjetos, useProjeto } from './hooks/useProjetos.js'
 import schemaProjeto from './schemas/projetoSchema.js'
 
 const estadoInicial = {
@@ -28,11 +28,13 @@ function dadosDoProjeto(projeto) {
 
 function FormularioProjeto() {
   const { id } = useParams()
-  const { projetos, carregando, criarProjeto, atualizarProjeto } = useProjetos()
+  const { projeto, carregando, erro } = useProjeto(id)
+  const { criarProjeto, atualizarProjeto } = useMutacoesProjetos()
   const editando = Boolean(id)
-  const projeto = projetos.find((item) => String(item.id) === String(id))
 
   if (editando && carregando) return <Carregando>Carregando projeto...</Carregando>
+
+  if (editando && erro) return <Alerta>{erro}</Alerta>
 
   if (editando && !projeto) return <Alerta>Projeto não encontrado.</Alerta>
 

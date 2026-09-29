@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react'
-import { Collapse } from 'bootstrap'
+import { useEffect, useRef, useState } from 'react'
+import { Container, Nav, Navbar } from 'react-bootstrap'
 import { FolderKanban, FolderPlus } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 
 // Itens do menu principal. Para adicionar uma página ao menu, inclua um item aqui.
 const ITENS_MENU = [
@@ -11,80 +11,64 @@ const ITENS_MENU = [
 
 function Cabecalho() {
   const navRef = useRef(null)
-  const menuRef = useRef(null)
+  const [aberto, setAberto] = useState(false)
+  const fecharMenu = () => setAberto(false)
 
-  const fecharMenu = () => {
-    const menu = menuRef.current
-    if (!menu?.classList.contains('show')) return
-
-    Collapse.getOrCreateInstance(menu, { toggle: false }).hide()
-  }
-
+  // No mobile o menu fecha ao interagir fora dele. O clique fora precisa de um
+  // listener no documento porque nem todo navegador move o foco ao tocar.
   useEffect(() => {
-    const nav = navRef.current
-
-    const aoPerderFoco = (event) => {
-      if (event.relatedTarget && nav.contains(event.relatedTarget)) return
-
-      fecharMenu()
-    }
-
     const aoInteragirFora = (event) => {
-      if (nav.contains(event.target)) return
-
-      fecharMenu()
+      if (!navRef.current?.contains(event.target)) setAberto(false)
     }
 
-    nav.addEventListener('focusout', aoPerderFoco)
     document.addEventListener('pointerdown', aoInteragirFora)
-
-    return () => {
-      nav.removeEventListener('focusout', aoPerderFoco)
-      document.removeEventListener('pointerdown', aoInteragirFora)
-    }
+    return () => document.removeEventListener('pointerdown', aoInteragirFora)
   }, [])
 
+  // Também fecha quando o foco (teclado) sai do menu.
+  const aoPerderFoco = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) setAberto(false)
+  }
+
   return (
-    <nav
+    <Navbar
       ref={navRef}
-      className="navbar navbar-expand-lg bg-primary"
+      expand="lg"
+      bg="primary"
       data-bs-theme="dark"
       aria-label="Navegação principal"
+      expanded={aberto}
+      onToggle={setAberto}
+      onBlur={aoPerderFoco}
     >
-      <div className="container">
-        <NavLink className="navbar-brand" to="/projetos" onClick={fecharMenu}>
+      <Container>
+        <Navbar.Brand as={Link} to="/projetos" onClick={fecharMenu}>
           Sistema de Gerenciamento de Projetos
-        </NavLink>
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#menu-principal"
+        </Navbar.Brand>
+        <Navbar.Toggle
           aria-controls="menu-principal"
-          aria-expanded="false"
-          aria-label="Alternar navegação"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
-        <div ref={menuRef} className="collapse navbar-collapse" id="menu-principal">
-          <ul className="navbar-nav ms-auto">
+          aria-expanded={aberto}
+          label="Alternar navegação"
+        />
+        <Navbar.Collapse id="menu-principal">
+          <Nav className="ms-auto">
             {ITENS_MENU.map(({ para, rotulo, Icone, exato }) => (
-              <li className="nav-item" key={para}>
-                <NavLink
-                  className="nav-link d-flex align-items-center gap-2"
-                  to={para}
-                  end={exato}
-                  onClick={fecharMenu}
-                >
-                  <Icone aria-hidden="true" size={18} />
-                  {rotulo}
-                </NavLink>
-              </li>
+              <Nav.Link
+                key={para}
+                as={NavLink}
+                to={para}
+                end={exato}
+                className="d-flex align-items-center gap-2"
+                onClick={fecharMenu}
+              >
+                <Icone aria-hidden="true" size={18} />
+                {rotulo}
+              </Nav.Link>
             ))}
-          </ul>
-        </div>
-      </div>
-    </nav>
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   )
 }
 

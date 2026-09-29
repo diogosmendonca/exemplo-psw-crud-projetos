@@ -13,6 +13,7 @@ O front-end é feito em React e consome uma API REST simulada com
 - [Manual do usuário](#manual-do-usuário)
 - [Design system](#design-system)
 - [Solução de problemas](#solução-de-problemas)
+- [Licença](#licença)
 
 ## Tecnologias
 
@@ -21,7 +22,7 @@ O front-end é feito em React e consome uma API REST simulada com
 | Interface | React 19, Vite, react-router-dom |
 | Dados remotos | @tanstack/react-query |
 | Formulários e validação | react-hook-form, zod |
-| Estilo | Bootstrap 5 (via Sass) e design system próprio |
+| Estilo e componentes | Bootstrap 5 (via Sass), react-bootstrap e design system próprio |
 | Ícones | lucide-react |
 | API simulada | json-server |
 | Qualidade | oxlint |
@@ -32,11 +33,12 @@ O front-end é feito em React e consome uma API REST simulada com
 .
 ├── .cursor/rules/design-system.mdc   # Regra para agentes de IA (Cursor)
 ├── dados/projetos.json               # Dados de exemplo usados pelo json-server
+├── .env.example                      # Modelo de configuração (URL da API)
 ├── src/
 │   ├── api/                          # Chamadas HTTP à API
 │   ├── aviso/                        # Toast de sucesso (AvisoProvider e useAviso)
 │   ├── design-system/                # Tokens, tema Bootstrap e componentes (+ README próprio)
-│   ├── hooks/                        # Hooks do react-query
+│   ├── hooks/                        # Hooks do react-query (lista, projeto por id, mutações)
 │   ├── schemas/                      # Validação dos formulários (zod)
 │   ├── App.jsx                       # Rotas
 │   ├── Cabecalho.jsx                 # Barra de navegação
@@ -45,6 +47,7 @@ O front-end é feito em React e consome uma API REST simulada com
 │   ├── ConfirmacaoExclusao.jsx       # Modal de exclusão
 │   └── main.jsx                      # Ponto de entrada
 ├── index.html
+├── LICENSE
 ├── package.json
 └── vite.config.js
 ```
@@ -166,9 +169,24 @@ npm run build
 ```
 
 Os arquivos estáticos ficam em `dist/` e podem ser servidos por qualquer
-servidor web. Lembre-se de que a URL da API está definida em
-`src/api/projetos.js` (`http://localhost:3000/projetos`) e deve ser ajustada
-para o ambiente de destino antes do build.
+servidor web.
+
+### Configuração da URL da API
+
+Por padrão a aplicação usa a API em `http://localhost:3000`. Para apontar para
+outro endereço, crie um arquivo `.env` (há um modelo em `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+```dotenv
+VITE_API_URL=https://minha-api.exemplo.com
+```
+
+Informe apenas o endereço base, sem `/projetos` no final. Reinicie o
+`npm run dev` após alterar o `.env`. Em produção, defina `VITE_API_URL`
+**antes** do `npm run build`, pois o valor é embutido no código gerado.
 
 ## Manual do usuário
 
@@ -256,7 +274,11 @@ O visual do sistema é definido em `src/design-system/`:
 
 | Sintoma | Causa provável | O que fazer |
 | --- | --- | --- |
-| A lista mostra "Não foi possível carregar os projetos" | API parada | Rode `npm run api` e recarregue a página. |
+| Mensagem "Não foi possível conectar à API…" | API parada ou `VITE_API_URL` incorreta | Rode `npm run api` (ou confira o endereço no `.env`) e recarregue a página. |
 | `EADDRINUSE` na porta 3000 ou 5173 | Outro processo usa a porta | Encerre o processo que está usando a porta ou feche o terminal antigo. |
 | Erro de versão do Node ao instalar ou rodar | Node desatualizado | Atualize para o Node 22.12 ou superior. |
 | Alterações não aparecem após editar `dados/projetos.json` | Arquivo editado com a API rodando | Pare a API, edite o arquivo e suba a API novamente. |
+
+## Licença
+
+Distribuído sob a licença MIT. Veja o arquivo [`LICENSE`](LICENSE).

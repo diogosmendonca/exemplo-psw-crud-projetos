@@ -15,6 +15,7 @@ Guia completo: `src/design-system/README.md` (leia antes de criar UI).
 - Alvos de toque ≥ 44px: use a classe `ds-alvo-toque` em botões de ação.
 - Sucesso de incluir/alterar/excluir: toast via `const { mostrarSucesso } = useAviso()` (de `./aviso/contexto.js`).
 - Botões em formulários e modais: principal à esquerda, secundário à direita (`modal-footer` com `justify-content-start`).
+- Componentes interativos (modal, menu, dropdown): `react-bootstrap`. Nada de `data-bs-*` nem `new Modal()` do Bootstrap JS.
 - Itens de menu: ícone `lucide-react` + nome, em `ITENS_MENU` de `Cabecalho.jsx`.
 - Nomes de componentes, props e textos da interface em português.
 

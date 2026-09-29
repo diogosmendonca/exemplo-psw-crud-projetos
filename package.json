@@ -1,7 +1,7 @@
 {
-  "name": "gerenciador",
+  "name": "gerenciador-de-projetos",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,6 +16,7 @@
     "bootstrap": "^5.3.8",
     "lucide-react": "^1.46.0",
     "react": "^19.2.8",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.88.0",
     "react-router-dom": "^7.18.4",
@@ -29,5 +30,12 @@
     "oxlint": "^1.79.0",
     "sass": "^1.105.1",
     "vite": "^8.2.2"
+  },
+  "description": "Exemplo de aplicação front-end da disciplina de PSW no CEFET/RJ - CRUD de Projetos",
+  "license": "MIT",
+  "author": "Diogo Mendonça <diogosmendonca@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git"
   }
 }
