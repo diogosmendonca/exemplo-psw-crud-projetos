@@ -1,0 +1,27 @@
+---
+description: Regras do design system (Bootstrap + tokens) para telas e componentes do gerenciador
+globs: src/**/*.{jsx,js,scss}
+alwaysApply: false
+---
+
+# Design System
+
+Guia completo: `src/design-system/README.md` (leia antes de criar UI).
+
+- Visual global só em `src/design-system/tokens.scss`. Cor principal: `$ds-cor-primaria` (verde).
+- Importe componentes de `./design-system`: `Alerta`, `Carregando`, `CampoFormulario`, `StatusBadge`, `TituloPagina`.
+- Reutilize antes de criar. Componente novo vai em `design-system/components/`, com JSDoc, export em `index.js` e linha no README.
+- Sem cores hexadecimal/RGB e sem `style={{}}` em telas. Sem novos `.css` de tela: use utilitários Bootstrap.
+- Alvos de toque ≥ 44px: use a classe `ds-alvo-toque` em botões de ação.
+- Sucesso de incluir/alterar/excluir: toast via `const { mostrarSucesso } = useAviso()` (de `./aviso/contexto.js`).
+- Botões em formulários e modais: principal à esquerda, secundário à direita (`modal-footer` com `justify-content-start`).
+- Itens de menu: ícone `lucide-react` + nome, em `ITENS_MENU` de `Cabecalho.jsx`.
+- Nomes de componentes, props e textos da interface em português.
+
+```jsx
+// ❌ BAD
+<label>Nome</label><input className="form-control" style={{ color: '#157a4f' }} />
+
+// ✅ GOOD
+<CampoFormulario id="nome-projeto" rotulo="Nome" erro={errors.nome} {...register('nome')} />
+```
