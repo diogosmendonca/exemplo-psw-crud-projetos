@@ -1,0 +1,25 @@
+// =============================================================================
+// TEMA — ponto de entrada de todo o CSS do sistema.
+// Importado uma única vez em `src/main.jsx`.
+//
+// Ordem importa:
+//   1. tokens  -> define $primary e demais variáveis do Bootstrap
+//   2. bootstrap -> compila TODO o Bootstrap já usando os tokens acima
+//   3. utilitários do design system -> classes `.ds-*` (mínimo necessário)
+//
+// Não adicione estilos de tela aqui. Prefira componentes Bootstrap e os
+// componentes de `src/design-system/components`.
+// =============================================================================
+
+@import 'tokens';
+@import 'bootstrap/scss/bootstrap';
+
+
+// -----------------------------------------------------------------------------
+// Utilitários do design system
+// -----------------------------------------------------------------------------
+
+// Garante área de toque mínima em botões usados em telas pequenas.
+.ds-alvo-toque {
+  min-height: $ds-alvo-toque-minimo;
+}

@@ -1,0 +1,74 @@
+// =============================================================================
+// DESIGN TOKENS — fonte única de verdade das decisões visuais do sistema.
+//
+// Como usar:
+//   - Para mudar o visual do sistema inteiro, edite SOMENTE este arquivo.
+//   - Este arquivo é importado por `theme.scss` ANTES do Bootstrap, então os
+//     valores abaixo sobrescrevem os padrões do Bootstrap (`$primary`, etc.).
+//   - Nunca escreva cores em hexadecimal fora deste arquivo.
+//
+// Convenção de nomes:
+//   $ds-*        token do design system (o que você edita)
+//   $primary ... variável do Bootstrap que recebe o token (não edite direto)
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 1. CORES
+// -----------------------------------------------------------------------------
+
+// Cor da marca. Usada em: navbar, botões `btn-primary`, links, foco de campos,
+// `badge text-bg-primary`, paginação. Contraste com branco: 5,2:1 (WCAG AA).
+$ds-cor-primaria: #157a4f;
+
+// Cores semânticas (significado fixo, independente da marca).
+$ds-cor-sucesso: #198754;   // confirmações, status "ativo"
+$ds-cor-perigo: #dc3545;    // exclusão, erros
+$ds-cor-aviso: #ffc107;     // atenção
+$ds-cor-info: #0dcaf0;      // informação neutra
+$ds-cor-secundaria: #6c757d; // ações de apoio, status "inativo"
+
+
+// -----------------------------------------------------------------------------
+// 2. TIPOGRAFIA
+// -----------------------------------------------------------------------------
+
+$ds-fonte-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+
+// -----------------------------------------------------------------------------
+// 3. FORMA
+// -----------------------------------------------------------------------------
+
+// Raio de borda de botões, campos e cartões. 0.5rem = cantos suaves.
+$ds-raio-borda: 0.5rem;
+
+
+// -----------------------------------------------------------------------------
+// 4. ACESSIBILIDADE E TOQUE (mobile)
+// -----------------------------------------------------------------------------
+
+// Altura mínima de qualquer alvo de toque. Recomendação WCAG/Apple/Google: 44px.
+// Aplicada pela classe utilitária `.ds-alvo-toque` (definida em `theme.scss`).
+// Use essa classe em todo botão/link que seja alvo principal de toque.
+$ds-alvo-toque-minimo: 2.75rem; // 44px
+
+
+// -----------------------------------------------------------------------------
+// 5. PONTE PARA O BOOTSTRAP
+//    Atribui cada token à variável Bootstrap correspondente.
+//    Não é preciso editar esta seção ao mudar valores das seções acima.
+// -----------------------------------------------------------------------------
+
+$primary: $ds-cor-primaria;
+$success: $ds-cor-sucesso;
+$danger: $ds-cor-perigo;
+$warning: $ds-cor-aviso;
+$info: $ds-cor-info;
+$secondary: $ds-cor-secundaria;
+
+$font-family-sans-serif: $ds-fonte-base;
+
+$border-radius: $ds-raio-borda;
+$border-radius-sm: $ds-raio-borda * 0.75;
+$border-radius-lg: $ds-raio-borda * 1.25;
