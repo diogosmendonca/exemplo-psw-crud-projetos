@@ -8,6 +8,15 @@ await iniciarRepositorio()
 const app = criarApp()
 
 app.listen(ambiente.porta, () => {
-  console.log(`API em execução em http://localhost:${ambiente.porta}`)
+  console.log(`Modo: ${ambiente.producao ? 'produção' : 'desenvolvimento'}`)
+  console.log(`API em http://localhost:${ambiente.porta}/api/projetos`)
   console.log(`Dados gravados em ${ambiente.arquivoDados}`)
+
+  if (ambiente.frontendDisponivel) {
+    console.log(`Aplicação em http://localhost:${ambiente.porta} (arquivos de ${ambiente.pastaFrontend})`)
+  } else {
+    console.log(
+      `Front-end compilado não encontrado em ${ambiente.pastaFrontend}: só a API está disponível.`,
+    )
+  }
 })

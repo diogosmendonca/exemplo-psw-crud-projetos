@@ -132,7 +132,10 @@ de projetos.
 
 - Para começar com a lista vazia, deixe o arquivo assim: `{ "projetos": [] }`.
 
-### Endpoints da API
+### Endpoints da API (json-server)
+
+No back-end deste repositório os mesmos endpoints ficam sob o prefixo `/api`
+(por exemplo, `/api/projetos`).
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
@@ -170,25 +173,38 @@ Exemplo de projeto:
 npm run build
 ```
 
-Os arquivos estáticos ficam em `dist/` e podem ser servidos por qualquer
-servidor web.
+Os arquivos estáticos ficam em `dist/`. O jeito recomendado de publicá-los é
+deixar o **back-end servi-los** (um só processo, sem CORS): veja o passo a passo
+em [Implantação em produção](../README.md#implantação-em-produção), no README da raiz.
+
+O build lê `.env.production` (`VITE_API_URL=/api`), então o código compilado chama
+a API na própria origem. Se for hospedar o `dist/` em outro servidor web, ajuste
+esse arquivo para o endereço da API **antes** de compilar.
 
 ### Configuração da URL da API
 
-Por padrão a aplicação usa a API em `http://localhost:3000`. Para apontar para
-outro endereço, crie um arquivo `.env` (há um modelo em `.env.example`):
+Em desenvolvimento, sem `.env`, a aplicação usa a API simulada em
+`http://localhost:3000` (json-server). Para usar o back-end deste repositório (ou
+outro endereço), crie um arquivo `.env` (o modelo `.env.example` já aponta para o
+back-end, `http://localhost:3001/api`):
 
 ```bash
 cp .env.example .env
 ```
 
 ```dotenv
-VITE_API_URL=https://minha-api.exemplo.com
+# Back-end deste repositório (as rotas ficam sob /api)
+VITE_API_URL=http://localhost:3001/api
+
+# ou a API simulada com json-server
+# VITE_API_URL=http://localhost:3000
 ```
 
 Informe apenas o endereço base, sem `/projetos` no final. Reinicie o
-`npm run dev` após alterar o `.env`. Em produção, defina `VITE_API_URL`
-**antes** do `npm run build`, pois o valor é embutido no código gerado.
+`npm run dev` após alterar o `.env`.
+
+O valor é embutido no código gerado: no `npm run build`, o `.env.production`
+tem prioridade sobre o `.env`.
 
 ## Manual do usuário
 

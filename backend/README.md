@@ -3,9 +3,10 @@
 API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
-> **Situação:** o CRUD de `/projetos` está completo (listar, buscar, criar, alterar
+> **Situação:** o CRUD de `/api/projetos` está completo (listar, buscar, criar, alterar
 > e excluir) e os dados são gravados em um arquivo JSON. Veja [Rotas](#rotas) e
-> [Armazenamento](#armazenamento).
+> [Armazenamento](#armazenamento). Em produção também serve o front-end
+> compilado (veja [Servindo o front-end compilado](#servindo-o-front-end-compilado-produção)).
 
 ## Pré-requisitos
 
@@ -21,7 +22,8 @@ cp .env.example .env   # opcional: sem o arquivo valem os padrões
 npm run dev
 ```
 
-A API fica em <http://localhost:3001>.
+A API fica em <http://localhost:3001/api/projetos>. Todas as rotas ficam sob o
+prefixo `/api` (veja [Rotas](#rotas)).
 
 | Comando | O que faz |
 | --- | --- |
@@ -33,16 +35,16 @@ A API fica em <http://localhost:3001>.
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `GET` | `/projetos` | Lista os projetos. Responde `200` com um array JSON. |
-| `GET` | `/projetos/:id` | Devolve os dados de um projeto. Responde `200` com o projeto, ou `404` se não existir. |
-| `POST` | `/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
-| `PUT` | `/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
-| `DELETE` | `/projetos/:id` | Exclui o projeto. Responde `204`, sem corpo. |
+| `GET` | `/api/projetos` | Lista os projetos. Responde `200` com um array JSON. |
+| `GET` | `/api/projetos/:id` | Devolve os dados de um projeto. Responde `200` com o projeto, ou `404` se não existir. |
+| `POST` | `/api/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
+| `PUT` | `/api/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
+| `DELETE` | `/api/projetos/:id` | Exclui o projeto. Responde `204`, sem corpo. |
 
-### GET /projetos
+### GET /api/projetos
 
 ```bash
-curl http://localhost:3001/projetos
+curl http://localhost:3001/api/projetos
 ```
 
 ```json
@@ -58,10 +60,10 @@ curl http://localhost:3001/projetos
 ]
 ```
 
-### GET /projetos/:id
+### GET /api/projetos/:id
 
 ```bash
-curl http://localhost:3001/projetos/2
+curl http://localhost:3001/api/projetos/2
 ```
 
 ```json
@@ -78,7 +80,7 @@ curl http://localhost:3001/projetos/2
 Se não existir projeto com esse `id` (inclusive id não numérico), a resposta é
 `404` com `{ "mensagem": "Projeto não encontrado." }`.
 
-### POST /projetos
+### POST /api/projetos
 
 Corpo da requisição (JSON):
 
@@ -94,7 +96,7 @@ O `id` é gerado pela API, sempre maior que todos os anteriores. Um `id` enviado
 campos desconhecidos são ignorados.
 
 ```bash
-curl -i -X POST http://localhost:3001/projetos \
+curl -i -X POST http://localhost:3001/api/projetos \
   -H "Content-Type: application/json" \
   -d '{"nome": "Novo App", "status": "ativo", "tecnologias": ["Node.js"]}'
 ```
@@ -119,14 +121,14 @@ Se algum campo for inválido, a resposta é `400` com todas as mensagens:
 }
 ```
 
-### PUT /projetos/:id
+### PUT /api/projetos/:id
 
 Substitui **todos** os dados do projeto: o corpo segue as mesmas regras do
 `POST` e os campos opcionais omitidos voltam ao padrão (`""` ou `[]`). O `id`
 vem da URL e não muda; um `id` no corpo é ignorado.
 
 ```bash
-curl -i -X PUT http://localhost:3001/projetos/2 \
+curl -i -X PUT http://localhost:3001/api/projetos/2 \
   -H "Content-Type: application/json" \
   -d '{"nome": "API de Biblioteca v2", "status": "inativo"}'
 ```
@@ -139,10 +141,10 @@ curl -i -X PUT http://localhost:3001/projetos/2 \
 
 O `404` tem prioridade sobre o `400`: com um id inexistente, o corpo nem é validado.
 
-### DELETE /projetos/:id
+### DELETE /api/projetos/:id
 
 ```bash
-curl -i -X DELETE http://localhost:3001/projetos/2
+curl -i -X DELETE http://localhost:3001/api/projetos/2
 ```
 
 | Resposta | Quando |
@@ -196,15 +198,32 @@ API. Ele reescreve o arquivo inteiro a cada alteração e não permite que dois
 processos o usem ao mesmo tempo. Para mais que isso, o caminho natural é um banco
 de dados; as rotas não precisariam mudar, só `src/repositorio/projetos.js`.
 
+## Servindo o front-end compilado (produção)
+
+Se a pasta `../frontend/dist` existir ao iniciar, a API também serve a aplicação
+web, e o conjunto roda em **uma só porta e uma só origem** (sem CORS).
+
+- `/api/...` continua sendo a API. Rota desconhecida sob `/api` devolve `404` em JSON.
+- Arquivos de `frontend/dist` são servidos como estão (os de `assets/` com cache
+  de um ano, pois têm hash no nome).
+- Qualquer outro `GET` sem extensão (`/`, `/projetos`, `/projetos/4/excluir`)
+  recebe o `index.html`, e o React Router decide a tela. Assim o F5 funciona.
+- Se a pasta não existir, só a API fica no ar (o log avisa).
+
+Passo a passo de implantação: [README da raiz](../README.md#implantação-em-produção).
+O código está em `src/middlewares/frontendEstatico.js`.
+
 ## Configuração
 
 Variáveis lidas do ambiente ou do arquivo `.env` (modelo em `.env.example`):
 
 | Variável | Padrão | Descrição |
 | --- | --- | --- |
-| `PORT` | `3001` | Porta da API. Não é `3000` para não colidir com o json-server do front-end enquanto os dois coexistirem. |
-| `CORS_ORIGIN` | `http://localhost:5173` | Endereço do front-end autorizado a chamar a API. |
+| `PORT` | `3001` | Porta da API (e da aplicação, quando o front-end compilado é servido). Não é `3000` para não colidir com o json-server do front-end enquanto os dois coexistirem. |
+| `NODE_ENV` | (vazio) | Use `production` ao implantar: desliga o CORS padrão e ativa o modo de produção do Express. |
+| `CORS_ORIGIN` | `http://localhost:5173` em desenvolvimento; **nenhum** em produção | Endereço de outro site autorizado a chamar a API. Se definida, vale em qualquer modo. Em produção, com o front-end servido pela API, não é necessária. |
 | `ARQUIVO_DADOS` | `dados/projetos.json` | Arquivo JSON onde os projetos são gravados. Caminho relativo conta a partir da pasta `backend`. |
+| `PASTA_FRONTEND` | `../frontend/dist` | Pasta com o front-end compilado. Caminho relativo conta a partir da pasta `backend`. |
 
 Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
 
@@ -216,12 +235,13 @@ backend/
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
 │   ├── middlewares/
+│   │   ├── frontendEstatico.js    # Serve frontend/dist e devolve index.html nas telas do React
 │   │   ├── naoEncontrado.js       # 404 em JSON
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
 │   ├── repositorio/
 │   │   └── projetos.js            # Leitura e gravação dos projetos no arquivo JSON
 │   ├── rotas/
-│   │   └── projetos.js            # Rotas de /projetos
+│   │   └── projetos.js            # Rotas de /api/projetos
 │   ├── validacoes/
 │   │   └── projeto.js             # Validação do corpo de um projeto
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
@@ -244,7 +264,7 @@ backend/
 Toda resposta de erro é JSON com uma mensagem em português:
 
 ```json
-{ "mensagem": "Rota não encontrada: GET /projetos" }
+{ "mensagem": "Rota não encontrada: GET /api/inexistente" }
 ```
 
 ## Licença
