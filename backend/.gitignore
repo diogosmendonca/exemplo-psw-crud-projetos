@@ -2,3 +2,7 @@ node_modules
 .env
 *.log
 .DS_Store
+
+# Dados gravados pela API (a cópia inicial vem de dados/projetos.exemplo.json)
+dados/projetos.json
+dados/*.tmp

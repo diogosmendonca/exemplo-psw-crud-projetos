@@ -4,8 +4,8 @@ API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
 > **Situação:** o CRUD de `/projetos` está completo (listar, buscar, criar, alterar
-> e excluir), mas os dados ficam só em memória: a persistência ainda não existe.
-> Veja [Rotas](#rotas).
+> e excluir) e os dados são gravados em um arquivo JSON. Veja [Rotas](#rotas) e
+> [Armazenamento](#armazenamento).
 
 ## Pré-requisitos
 
@@ -151,14 +151,50 @@ curl -i -X DELETE http://localhost:3001/projetos/2
 | `404` | Não existe projeto com esse `id` (inclusive id não numérico): `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
 
 O id de um projeto excluído **não é reaproveitado**: os ids novos sempre
-continuam crescendo (função `proximoId` em `src/dados/projetos.js`), para que um
+continuam crescendo (o último id usado é guardado junto com os projetos), para que um
 link antigo nunca aponte para outro projeto.
 
-### Armazenamento
+## Armazenamento
 
-Os projetos ficam em uma variável em `src/dados/projetos.js`. O `POST`, o `PUT` e o
-`DELETE` gravam nessa mesma variável, que as rotas de leitura também usam. Isso é provisório:
-ao reiniciar a API, os dados voltam ao conteúdo desse arquivo.
+Os projetos são gravados em um **arquivo JSON**: `dados/projetos.json`.
+
+```json
+{
+  "ultimoId": 3,
+  "projetos": [
+    { "id": 1, "nome": "Portal do Aluno", "status": "ativo", "descricao": "", "tecnologias": [], "url": "" }
+  ]
+}
+```
+
+- **Primeira execução:** se `dados/projetos.json` não existe, a API o cria como
+  uma cópia de `dados/projetos.exemplo.json` (três projetos de exemplo).
+- **Git:** só o arquivo de exemplo é versionado. O `projetos.json` está no
+  `.gitignore`, então usar a API não suja o repositório.
+- **Voltar aos dados de exemplo:** pare a API e apague `dados/projetos.json`; ele
+  será recriado na próxima execução.
+- **`ultimoId`:** o último id já usado. Ele garante que o id de um projeto
+  excluído nunca seja reaproveitado, nem depois de reiniciar a API.
+- **Edição manual:** o arquivo é lido **uma vez, ao iniciar**. Para editá-lo à
+  mão, pare a API antes. Se o `ultimoId` faltar, a API usa o maior id existente.
+- **Arquivo inválido:** se o conteúdo não for um JSON no formato acima, a API não
+  sobe e informa o problema, em vez de sobrescrever os dados.
+
+Como funciona (`src/repositorio/projetos.js`):
+
+- Cada alteração (`POST`, `PUT`, `DELETE`) é gravada no arquivo **antes** de passar
+  a valer. Se a gravação falhar, a API responde `500` e nada muda.
+- A gravação é atômica: escreve em um arquivo temporário e o renomeia, então o
+  arquivo nunca fica pela metade, mesmo se a API cair no meio.
+- As alterações são executadas uma de cada vez, para que requisições simultâneas
+  não se sobrescrevam.
+
+### Limites desta solução
+
+Um arquivo JSON serve para um exemplo e para uso com **uma única instância** da
+API. Ele reescreve o arquivo inteiro a cada alteração e não permite que dois
+processos o usem ao mesmo tempo. Para mais que isso, o caminho natural é um banco
+de dados; as rotas não precisariam mudar, só `src/repositorio/projetos.js`.
 
 ## Configuração
 
@@ -168,6 +204,7 @@ Variáveis lidas do ambiente ou do arquivo `.env` (modelo em `.env.example`):
 | --- | --- | --- |
 | `PORT` | `3001` | Porta da API. Não é `3000` para não colidir com o json-server do front-end enquanto os dois coexistirem. |
 | `CORS_ORIGIN` | `http://localhost:5173` | Endereço do front-end autorizado a chamar a API. |
+| `ARQUIVO_DADOS` | `dados/projetos.json` | Arquivo JSON onde os projetos são gravados. Caminho relativo conta a partir da pasta `backend`. |
 
 Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
 
@@ -178,21 +215,26 @@ backend/
 ├── src/
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
-│   ├── dados/
-│   │   └── projetos.js            # Projetos em memória (provisório)
 │   ├── middlewares/
 │   │   ├── naoEncontrado.js       # 404 em JSON
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
+│   ├── repositorio/
+│   │   └── projetos.js            # Leitura e gravação dos projetos no arquivo JSON
 │   ├── rotas/
 │   │   └── projetos.js            # Rotas de /projetos
 │   ├── validacoes/
 │   │   └── projeto.js             # Validação do corpo de um projeto
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
 │   └── servidor.js                # Sobe o servidor na porta configurada
+├── dados/
+│   ├── projetos.exemplo.json      # Dados iniciais (versionado)
+│   └── projetos.json              # Dados em uso (criado pela API; ignorado pelo git)
 ├── .env.example
 └── package.json
 ```
 
+- As rotas não conhecem o arquivo: falam só com o `repositorio/`. Trocar o JSON por
+  um banco de dados mexe apenas nele.
 - `app.js` só **monta** a aplicação e `servidor.js` só **sobe** o servidor. Essa
   separação permite testar a API sem abrir uma porta.
 - Cada recurso tem seu arquivo em `rotas/`, registrado em `app.js` antes de `naoEncontrado`.

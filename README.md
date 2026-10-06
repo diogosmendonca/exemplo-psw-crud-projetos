@@ -9,7 +9,7 @@ um com seu próprio `package.json` e suas próprias dependências.
 | Pasta | O que é | Situação |
 | --- | --- | --- |
 | [`frontend/`](frontend) | Aplicação web (React, Vite, Bootstrap) | Pronto. Funciona com o back-end ou com a API simulada (json-server). |
-| [`backend/`](backend) | API REST (Node.js, Express) | Em construção. CRUD completo em `/projetos`, com dados em memória. |
+| [`backend/`](backend) | API REST (Node.js, Express) | Em construção. CRUD completo em `/projetos`, com dados gravados em arquivo JSON. |
 
 ## Estrutura
 
@@ -55,8 +55,9 @@ cp .env.example .env     # e defina VITE_API_URL=http://localhost:3001
 npm run dev
 ```
 
-Os projetos do back-end ficam em memória: ao reiniciar a API, voltam aos três
-projetos de exemplo.
+Os projetos do back-end são gravados em `backend/dados/projetos.json` (criado na
+primeira execução, a partir de um arquivo de exemplo) e sobrevivem a reinícios.
+Veja os detalhes no [README do back-end](backend/README.md#armazenamento).
 
 ## Convenções do repositório
 
