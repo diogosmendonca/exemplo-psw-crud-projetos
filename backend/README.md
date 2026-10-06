@@ -3,8 +3,8 @@
 API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
-> **Situação:** em construção. Existem `GET /projetos` e `POST /projetos`, que
-> trabalham com projetos guardados em memória (veja [Rotas](#rotas)). As demais
+> **Situação:** em construção. Existem `GET /projetos`, `POST /projetos` e
+> `PUT /projetos/:id`, que trabalham com projetos guardados em memória (veja [Rotas](#rotas)). As demais
 > rotas e a persistência dos dados ainda não existem.
 
 ## Pré-requisitos
@@ -35,6 +35,7 @@ A API fica em <http://localhost:3001>.
 | --- | --- | --- |
 | `GET` | `/projetos` | Lista os projetos. Responde `200` com um array JSON. |
 | `POST` | `/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
+| `PUT` | `/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
 
 ### GET /projetos
 
@@ -96,10 +97,30 @@ Se algum campo for inválido, a resposta é `400` com todas as mensagens:
 }
 ```
 
+### PUT /projetos/:id
+
+Substitui **todos** os dados do projeto: o corpo segue as mesmas regras do
+`POST` e os campos opcionais omitidos voltam ao padrão (`""` ou `[]`). O `id`
+vem da URL e não muda; um `id` no corpo é ignorado.
+
+```bash
+curl -i -X PUT http://localhost:3001/projetos/2 \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "API de Biblioteca v2", "status": "inativo"}'
+```
+
+| Resposta | Quando |
+| --- | --- |
+| `200` | Projeto alterado. O corpo é o projeto com os novos dados. |
+| `404` | Não existe projeto com esse `id` (inclusive id não numérico): `{ "mensagem": "Projeto não encontrado." }`. |
+| `400` | Corpo inválido, no mesmo formato de erros do `POST`. |
+
+O `404` tem prioridade sobre o `400`: com um id inexistente, o corpo nem é validado.
+
 ### Armazenamento
 
-Os projetos ficam em uma variável em `src/dados/projetos.js`, e o `POST` grava
-nessa mesma variável, que a listagem também lê. Isso é provisório:
+Os projetos ficam em uma variável em `src/dados/projetos.js`. O `POST` e o `PUT`
+gravam nessa mesma variável, que a listagem também lê. Isso é provisório:
 ao reiniciar a API, os dados voltam ao conteúdo desse arquivo.
 
 ## Configuração

@@ -1,11 +1,11 @@
 const STATUS_VALIDOS = ['ativo', 'inativo']
 
 /**
- * Valida e normaliza o corpo recebido para criar um projeto.
+ * Valida e normaliza o corpo recebido para criar ou alterar um projeto.
  * Devolve `{ erros }` (lista de mensagens) ou `{ projeto }` com os campos
  * já tratados. Campos desconhecidos, inclusive `id`, são descartados.
  */
-export function validarNovoProjeto(corpo) {
+export function validarProjeto(corpo) {
   if (corpo === null || typeof corpo !== 'object' || Array.isArray(corpo)) {
     return { erros: ['O corpo da requisição deve ser um objeto JSON com os dados do projeto.'] }
   }
