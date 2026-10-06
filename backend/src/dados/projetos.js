@@ -26,3 +26,14 @@ export const projetos = [
     url: '',
   },
 ]
+
+let ultimoId = Math.max(0, ...projetos.map((projeto) => projeto.id))
+
+/**
+ * Próximo id disponível. Só cresce: o id de um projeto excluído não é
+ * reaproveitado, para que links antigos nunca apontem para outro projeto.
+ */
+export function proximoId() {
+  ultimoId += 1
+  return ultimoId
+}

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { projetos } from '../dados/projetos.js'
+import { projetos, proximoId } from '../dados/projetos.js'
 import { validarProjeto } from '../validacoes/projeto.js'
 
 export const rotasProjetos = Router()
@@ -26,7 +26,8 @@ rotasProjetos.get('/:id', (requisicao, resposta) => {
 })
 
 // POST /projetos - cria um projeto a partir do JSON do corpo da requisição.
-// O id é sempre gerado pela API: um `id` enviado pelo cliente é ignorado.
+// O id é sempre gerado pela API (nunca reaproveita ids excluídos): um `id`
+// enviado pelo cliente é ignorado.
 rotasProjetos.post('/', (requisicao, resposta) => {
   const { projeto, erros } = validarProjeto(requisicao.body)
 
@@ -34,11 +35,10 @@ rotasProjetos.post('/', (requisicao, resposta) => {
     return resposta.status(400).json({ mensagem: 'Projeto inválido.', erros })
   }
 
-  const id = Math.max(0, ...projetos.map((item) => item.id)) + 1
-  const novoProjeto = { id, ...projeto }
+  const novoProjeto = { id: proximoId(), ...projeto }
   projetos.push(novoProjeto)
 
-  resposta.status(201).location(`/projetos/${id}`).json(novoProjeto)
+  resposta.status(201).location(`/projetos/${novoProjeto.id}`).json(novoProjeto)
 })
 
 // PUT /projetos/:id - substitui os dados do projeto pelo JSON do corpo.
@@ -60,4 +60,17 @@ rotasProjetos.put('/:id', (requisicao, resposta) => {
   projetos[indice] = projetoAlterado
 
   resposta.json(projetoAlterado)
+})
+
+// DELETE /projetos/:id - exclui o projeto da lista.
+rotasProjetos.delete('/:id', (requisicao, resposta) => {
+  const indice = indiceDoProjeto(requisicao.params.id)
+
+  if (indice === -1) {
+    return resposta.status(404).json({ mensagem: 'Projeto não encontrado.' })
+  }
+
+  projetos.splice(indice, 1)
+
+  resposta.status(204).end()
 })

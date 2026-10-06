@@ -3,9 +3,9 @@
 API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
-> **Situação:** em construção. Existem `GET /projetos`, `GET /projetos/:id`,
-> `POST /projetos` e `PUT /projetos/:id`, que trabalham com projetos guardados em memória (veja [Rotas](#rotas)). As demais
-> rotas e a persistência dos dados ainda não existem.
+> **Situação:** o CRUD de `/projetos` está completo (listar, buscar, criar, alterar
+> e excluir), mas os dados ficam só em memória: a persistência ainda não existe.
+> Veja [Rotas](#rotas).
 
 ## Pré-requisitos
 
@@ -37,6 +37,7 @@ A API fica em <http://localhost:3001>.
 | `GET` | `/projetos/:id` | Devolve os dados de um projeto. Responde `200` com o projeto, ou `404` se não existir. |
 | `POST` | `/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
 | `PUT` | `/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
+| `DELETE` | `/projetos/:id` | Exclui o projeto. Responde `204`, sem corpo. |
 
 ### GET /projetos
 
@@ -89,7 +90,7 @@ Corpo da requisição (JSON):
 | `tecnologias` | Não | Lista de textos. Padrão: `[]`. |
 | `url` | Não | URL válida ou vazia. Padrão: `""`. |
 
-O `id` é gerado pela API (maior id existente + 1). Um `id` enviado no corpo e
+O `id` é gerado pela API, sempre maior que todos os anteriores. Um `id` enviado no corpo e
 campos desconhecidos são ignorados.
 
 ```bash
@@ -138,10 +139,25 @@ curl -i -X PUT http://localhost:3001/projetos/2 \
 
 O `404` tem prioridade sobre o `400`: com um id inexistente, o corpo nem é validado.
 
+### DELETE /projetos/:id
+
+```bash
+curl -i -X DELETE http://localhost:3001/projetos/2
+```
+
+| Resposta | Quando |
+| --- | --- |
+| `204` | Projeto excluído. A resposta não tem corpo. |
+| `404` | Não existe projeto com esse `id` (inclusive id não numérico): `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
+
+O id de um projeto excluído **não é reaproveitado**: os ids novos sempre
+continuam crescendo (função `proximoId` em `src/dados/projetos.js`), para que um
+link antigo nunca aponte para outro projeto.
+
 ### Armazenamento
 
-Os projetos ficam em uma variável em `src/dados/projetos.js`. O `POST` e o `PUT`
-gravam nessa mesma variável, que a listagem também lê. Isso é provisório:
+Os projetos ficam em uma variável em `src/dados/projetos.js`. O `POST`, o `PUT` e o
+`DELETE` gravam nessa mesma variável, que as rotas de leitura também usam. Isso é provisório:
 ao reiniciar a API, os dados voltam ao conteúdo desse arquivo.
 
 ## Configuração
