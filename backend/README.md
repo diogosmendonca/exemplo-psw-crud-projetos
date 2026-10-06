@@ -3,8 +3,8 @@
 API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
-> **Situação:** em construção. Existe apenas a rota `GET /projetos`, que
-> devolve projetos guardados em memória (veja [Rotas](#rotas)). As demais
+> **Situação:** em construção. Existem `GET /projetos` e `POST /projetos`, que
+> trabalham com projetos guardados em memória (veja [Rotas](#rotas)). As demais
 > rotas e a persistência dos dados ainda não existem.
 
 ## Pré-requisitos
@@ -34,8 +34,9 @@ A API fica em <http://localhost:3001>.
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | `GET` | `/projetos` | Lista os projetos. Responde `200` com um array JSON. |
+| `POST` | `/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
 
-Exemplo:
+### GET /projetos
 
 ```bash
 curl http://localhost:3001/projetos
@@ -54,7 +55,51 @@ curl http://localhost:3001/projetos
 ]
 ```
 
-Os projetos ficam em uma variável em `src/dados/projetos.js`. Isso é provisório:
+### POST /projetos
+
+Corpo da requisição (JSON):
+
+| Campo | Obrigatório | Regra |
+| --- | --- | --- |
+| `nome` | Sim | Texto não vazio. |
+| `status` | Sim | `"ativo"` ou `"inativo"`. |
+| `descricao` | Não | Texto. Padrão: `""`. |
+| `tecnologias` | Não | Lista de textos. Padrão: `[]`. |
+| `url` | Não | URL válida ou vazia. Padrão: `""`. |
+
+O `id` é gerado pela API (maior id existente + 1). Um `id` enviado no corpo e
+campos desconhecidos são ignorados.
+
+```bash
+curl -i -X POST http://localhost:3001/projetos \
+  -H "Content-Type: application/json" \
+  -d '{"nome": "Novo App", "status": "ativo", "tecnologias": ["Node.js"]}'
+```
+
+```json
+{
+  "id": 4,
+  "nome": "Novo App",
+  "status": "ativo",
+  "descricao": "",
+  "tecnologias": ["Node.js"],
+  "url": ""
+}
+```
+
+Se algum campo for inválido, a resposta é `400` com todas as mensagens:
+
+```json
+{
+  "mensagem": "Projeto inválido.",
+  "erros": ["Informe o nome do projeto.", "Informe uma URL válida."]
+}
+```
+
+### Armazenamento
+
+Os projetos ficam em uma variável em `src/dados/projetos.js`, e o `POST` grava
+nessa mesma variável, que a listagem também lê. Isso é provisório:
 ao reiniciar a API, os dados voltam ao conteúdo desse arquivo.
 
 ## Configuração
@@ -82,6 +127,8 @@ backend/
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
 │   ├── rotas/
 │   │   └── projetos.js            # Rotas de /projetos
+│   ├── validacoes/
+│   │   └── projeto.js             # Validação do corpo de um projeto
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
 │   └── servidor.js                # Sobe o servidor na porta configurada
 ├── .env.example
