@@ -14,6 +14,17 @@ rotasProjetos.get('/', (requisicao, resposta) => {
   resposta.json(projetos)
 })
 
+// GET /projetos/:id - devolve os dados de um projeto.
+rotasProjetos.get('/:id', (requisicao, resposta) => {
+  const indice = indiceDoProjeto(requisicao.params.id)
+
+  if (indice === -1) {
+    return resposta.status(404).json({ mensagem: 'Projeto não encontrado.' })
+  }
+
+  resposta.json(projetos[indice])
+})
+
 // POST /projetos - cria um projeto a partir do JSON do corpo da requisição.
 // O id é sempre gerado pela API: um `id` enviado pelo cliente é ignorado.
 rotasProjetos.post('/', (requisicao, resposta) => {

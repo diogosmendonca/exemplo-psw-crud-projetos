@@ -3,8 +3,8 @@
 API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
-> **Situação:** em construção. Existem `GET /projetos`, `POST /projetos` e
-> `PUT /projetos/:id`, que trabalham com projetos guardados em memória (veja [Rotas](#rotas)). As demais
+> **Situação:** em construção. Existem `GET /projetos`, `GET /projetos/:id`,
+> `POST /projetos` e `PUT /projetos/:id`, que trabalham com projetos guardados em memória (veja [Rotas](#rotas)). As demais
 > rotas e a persistência dos dados ainda não existem.
 
 ## Pré-requisitos
@@ -34,6 +34,7 @@ A API fica em <http://localhost:3001>.
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | `GET` | `/projetos` | Lista os projetos. Responde `200` com um array JSON. |
+| `GET` | `/projetos/:id` | Devolve os dados de um projeto. Responde `200` com o projeto, ou `404` se não existir. |
 | `POST` | `/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
 | `PUT` | `/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
 
@@ -55,6 +56,26 @@ curl http://localhost:3001/projetos
   }
 ]
 ```
+
+### GET /projetos/:id
+
+```bash
+curl http://localhost:3001/projetos/2
+```
+
+```json
+{
+  "id": 2,
+  "nome": "API de Biblioteca",
+  "status": "ativo",
+  "descricao": "Serviço REST para controle de acervo e empréstimos.",
+  "tecnologias": ["Node.js", "Express", "PostgreSQL"],
+  "url": ""
+}
+```
+
+Se não existir projeto com esse `id` (inclusive id não numérico), a resposta é
+`404` com `{ "mensagem": "Projeto não encontrado." }`.
 
 ### POST /projetos
 
