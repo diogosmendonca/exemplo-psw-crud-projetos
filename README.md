@@ -9,7 +9,7 @@ um com seu próprio `package.json` e suas próprias dependências.
 | Pasta | O que é | Situação |
 | --- | --- | --- |
 | [`frontend/`](frontend) | Aplicação web (React, Vite, Bootstrap) | Pronto. Usa uma API simulada com json-server. |
-| [`backend/`](backend) | API REST (Node.js, Express) | Configuração inicial. As rotas ainda não existem. |
+| [`backend/`](backend) | API REST (Node.js, Express) | Em construção. Só existe `GET /projetos`, com dados em memória. |
 
 ## Estrutura
 

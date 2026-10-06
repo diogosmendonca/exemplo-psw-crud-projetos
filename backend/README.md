@@ -3,9 +3,9 @@
 API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
-> **Situação:** configuração inicial. O servidor sobe e já aplica CORS, leitura
-> de JSON e tratamento de erros, mas **ainda não há rotas**: toda requisição
-> recebe `404`. As rotas de `/projetos` serão a próxima etapa.
+> **Situação:** em construção. Existe apenas a rota `GET /projetos`, que
+> devolve projetos guardados em memória (veja [Rotas](#rotas)). As demais
+> rotas e a persistência dos dados ainda não existem.
 
 ## Pré-requisitos
 
@@ -29,6 +29,34 @@ A API fica em <http://localhost:3001>.
 | `npm start` | Inicia a API (uso em produção). |
 | `npm run lint` | Executa o oxlint. |
 
+## Rotas
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `GET` | `/projetos` | Lista os projetos. Responde `200` com um array JSON. |
+
+Exemplo:
+
+```bash
+curl http://localhost:3001/projetos
+```
+
+```json
+[
+  {
+    "id": 1,
+    "nome": "Portal do Aluno",
+    "status": "ativo",
+    "descricao": "Portal web para consulta de notas, faltas e horários.",
+    "tecnologias": ["React", "Vite", "Bootstrap"],
+    "url": "https://exemplo.com/portal-do-aluno"
+  }
+]
+```
+
+Os projetos ficam em uma variável em `src/dados/projetos.js`. Isso é provisório:
+ao reiniciar a API, os dados voltam ao conteúdo desse arquivo.
+
 ## Configuração
 
 Variáveis lidas do ambiente ou do arquivo `.env` (modelo em `.env.example`):
@@ -47,10 +75,14 @@ backend/
 ├── src/
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
+│   ├── dados/
+│   │   └── projetos.js            # Projetos em memória (provisório)
 │   ├── middlewares/
 │   │   ├── naoEncontrado.js       # 404 em JSON
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
-│   ├── app.js                     # Monta o Express (middlewares e, depois, as rotas)
+│   ├── rotas/
+│   │   └── projetos.js            # Rotas de /projetos
+│   ├── app.js                     # Monta o Express (middlewares e rotas)
 │   └── servidor.js                # Sobe o servidor na porta configurada
 ├── .env.example
 └── package.json
@@ -58,7 +90,7 @@ backend/
 
 - `app.js` só **monta** a aplicação e `servidor.js` só **sobe** o servidor. Essa
   separação permite testar a API sem abrir uma porta.
-- Ao criar as rotas, registre-as em `app.js`, antes de `naoEncontrado`.
+- Cada recurso tem seu arquivo em `rotas/`, registrado em `app.js` antes de `naoEncontrado`.
 
 ## Formato de erro
 
