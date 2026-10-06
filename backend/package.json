@@ -1,0 +1,29 @@
+{
+  "name": "gerenciador-de-projetos-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "API do Gerenciador de Projetos (exemplo da disciplina de PSW no CEFET/RJ) - Node.js e Express",
+  "license": "MIT",
+  "author": "Diogo Mendonça <diogosmendonca@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git",
+    "directory": "backend"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "dev": "node --watch src/servidor.js",
+    "start": "node src/servidor.js",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "oxlint": "^1.87.0"
+  }
+}

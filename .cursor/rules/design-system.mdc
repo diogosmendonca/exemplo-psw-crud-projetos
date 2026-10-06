@@ -1,14 +1,14 @@
 ---
 description: Regras do design system (Bootstrap + tokens) para telas e componentes do gerenciador
-globs: src/**/*.{jsx,js,scss}
+globs: frontend/src/**/*.{jsx,js,scss}
 alwaysApply: false
 ---
 
 # Design System
 
-Guia completo: `src/design-system/README.md` (leia antes de criar UI).
+Guia completo: `frontend/src/design-system/README.md` (leia antes de criar UI).
 
-- Visual global só em `src/design-system/tokens.scss`. Cor principal: `$ds-cor-primaria` (verde).
+- Visual global só em `frontend/src/design-system/tokens.scss`. Cor principal: `$ds-cor-primaria` (verde).
 - Importe componentes de `./design-system`: `Alerta`, `Carregando`, `CampoFormulario`, `StatusBadge`, `TituloPagina`.
 - Reutilize antes de criar. Componente novo vai em `design-system/components/`, com JSDoc, export em `index.js` e linha no README.
 - Sem cores hexadecimal/RGB e sem `style={{}}` em telas. Sem novos `.css` de tela: use utilitários Bootstrap.
