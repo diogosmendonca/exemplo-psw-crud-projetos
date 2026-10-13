@@ -45,6 +45,7 @@ prefixo `/api` (veja [Rotas](#rotas)).
 | `POST` | `/api/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
 | `PUT` | `/api/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
 | `DELETE` | `/api/projetos/:id` | Exclui o projeto. Responde `204`, sem corpo. |
+| `GET` | `/api/clientes` | Lista os clientes já cadastrados, em ordem alfabética. Veja [Clientes](#clientes). |
 
 ### GET /api/projetos
 
@@ -58,6 +59,7 @@ curl http://localhost:3001/api/projetos
     "id": "6aceb46b5086adf91b732126",
     "nome": "Portal do Aluno",
     "status": "ativo",
+    "cliente": { "id": "6aceb46b5086adf91b73212a", "nome": "CEFET/RJ" },
     "descricao": "Portal web para consulta de notas, faltas e horários.",
     "tecnologias": ["React", "Vite", "Bootstrap"],
     "url": "https://exemplo.com/portal-do-aluno"
@@ -93,6 +95,7 @@ Corpo da requisição (JSON):
 | --- | --- | --- |
 | `nome` | Sim | Texto não vazio. |
 | `status` | Sim | `"ativo"` ou `"inativo"`. |
+| `cliente` | Não | `{ "nome": "Acme" }` ou `null`. Até 100 caracteres. Se o cliente ainda não existe, é criado. Padrão: `null`. Veja [Clientes](#clientes). |
 | `descricao` | Não | Texto. Padrão: `""`. |
 | `tecnologias` | Não | Lista de textos. Padrão: `[]`. |
 | `url` | Não | URL válida ou vazia. Padrão: `""`. |
@@ -108,9 +111,10 @@ curl -i -X POST http://localhost:3001/api/projetos \
 
 ```json
 {
-  "id": 4,
+  "id": "6aceb46b5086adf91b732128",
   "nome": "Novo App",
   "status": "ativo",
+  "cliente": null,
   "descricao": "",
   "tecnologias": ["Node.js"],
   "url": ""
@@ -160,6 +164,31 @@ curl -i -X DELETE http://localhost:3001/api/projetos/6aceb46b5086adf91b732127
 O id de um projeto excluído **não é reaproveitado**: o MongoDB gera ids únicos, então
 um link antigo nunca aponta para outro projeto.
 
+## Clientes
+
+Cada projeto tem **no máximo um cliente**, e um cliente pode ter **muitos projetos**.
+O cliente não tem tela nem cadastro próprio: ele nasce quando um projeto é salvo
+com um nome novo.
+
+- **No corpo do projeto** (`POST` e `PUT`) o cliente vai como `{ "nome": "Acme" }`. Se
+  já existe um cliente com esse nome, o projeto passa a usá-lo; se não, ele é criado.
+  A comparação **ignora maiúsculas e minúsculas** (`acme` e `ACME` são o cliente
+  `Acme`, que vale com a grafia da primeira vez) e os espaços nas pontas. Um `id`
+  dentro de `cliente` é ignorado. `"cliente": null` (ou omitido) deixa o projeto sem cliente.
+- **Nas respostas** o cliente vem como `{ "id": "...", "nome": "..." }`, ou `null` para
+  projetos sem cliente (como os criados antes desta funcionalidade).
+- **`GET /api/clientes`** devolve a lista usada nas sugestões do formulário:
+
+  ```json
+  [
+    { "id": "6aceb46b5086adf91b73212a", "nome": "CEFET/RJ" },
+    { "id": "6aceb46b5086adf91b73212b", "nome": "Prefeitura Municipal" }
+  ]
+  ```
+
+- Um cliente que ficou sem projetos **continua cadastrado** (continua sendo sugerido).
+  Não há rota para excluí-lo ou renomeá-lo.
+
 ## MongoDB
 
 Os projetos são gravados no MongoDB, na coleção `projetos`, com o
@@ -184,8 +213,8 @@ Depois de reiniciar o computador, use `docker start mongodb-psw`.
 
 ### Dados iniciais
 
-O banco começa **vazio**. Para carregar os três projetos de exemplo
-(`dados/projetos.exemplo.json`):
+O banco começa **vazio**. Para carregar os três projetos de exemplo, com seus dois
+clientes (`dados/projetos.exemplo.json`):
 
 ```bash
 npm run mongo:popular
@@ -205,7 +234,7 @@ O arquivo pode ser `{ "projetos": [...] }` ou uma lista. Os `id` dele são desca
 Para zerar o banco, apague a coleção e rode o comando de novo:
 
 ```bash
-docker exec mongodb-psw mongosh gerenciador-projetos --eval "db.projetos.drop()"
+docker exec mongodb-psw mongosh gerenciador-projetos --eval "db.projetos.drop(); db.cliente.drop()"
 npm run mongo:popular
 ```
 
@@ -236,11 +265,17 @@ Se falhar, mostra o motivo, sai com código `1` e não expõe a senha da `MONGOD
   (`MongoDB: reconectado.`) e a API volta a funcionar sem reiniciar.
 - **Ao encerrar** (`Ctrl+C` ou `SIGTERM`): a conexão é fechada antes de o processo sair.
 
-### Schema do projeto
+### Schemas
 
 O modelo `Projeto` (`src/modelos/projeto.js`) usa a coleção `projetos` e tem os mesmos
-campos da API: `nome` e `status` (`ativo` ou `inativo`) obrigatórios, e `descricao`,
-`tecnologias` e `url` opcionais. Espaços nas pontas de `nome` e `url` são removidos.
+campos da API: `nome` e `status` (`ativo` ou `inativo`) obrigatórios, e `cliente`,
+`descricao`, `tecnologias` e `url` opcionais.
+
+O modelo `Cliente` (`src/modelos/cliente.js`) usa a coleção `cliente` e tem só o `nome`.
+O projeto guarda o `_id` do cliente (uma referência, `ref: 'Cliente'`) e o repositório
+usa `populate('cliente')` para devolver `{ id, nome }`. O `nome` tem um **índice único
+que ignora maiúsculas**, criado ao iniciar a API: ele garante que dois projetos salvos
+ao mesmo tempo com o mesmo cliente novo não criem dois clientes. Espaços nas pontas de `nome` e `url` são removidos.
 É usado por `src/repositorio/projetos.js`.
 
 **`id` da API × `_id` do MongoDB.** A API fala em `id` (texto); o banco guarda `_id`
@@ -305,10 +340,14 @@ backend/
 │   │   ├── naoEncontrado.js       # 404 em JSON
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
 │   ├── modelos/
+│   │   ├── cliente.js             # Schema e modelo do cliente (Mongoose)
+│   │   ├── paraApi.js             # Conversão de _id para id nas respostas
 │   │   └── projeto.js             # Schema e modelo do projeto (Mongoose)
 │   ├── repositorio/
+│   │   ├── clientes.js            # Consultas dos clientes (lista e "obter ou criar")
 │   │   └── projetos.js            # Consultas dos projetos no MongoDB
 │   ├── rotas/
+│   │   ├── clientes.js            # Rota de /api/clientes
 │   │   └── projetos.js            # Rotas de /api/projetos
 │   ├── validacoes/
 │   │   └── projeto.js             # Validação do corpo de um projeto

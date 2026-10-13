@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { paraApi } from './paraApi.js'
 
 /**
  * Schema e modelo do projeto no MongoDB.
@@ -46,6 +47,10 @@ const schemaProjeto = new mongoose.Schema(
         message: `O status deve ser um destes valores: ${STATUS_VALIDOS.join(', ')}.`,
       },
     },
+    // Referência ao cliente (`_id` na coleção `cliente`). Opcional: projetos
+    // antigos não têm cliente. As consultas usam `populate('cliente')`, então a
+    // API devolve `{ id, nome }` (ou `null`) em vez do `_id` solto.
+    cliente: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', default: null },
     descricao: { type: String, default: '' },
     tecnologias: { type: [String], default: [] },
     url: {
@@ -64,12 +69,6 @@ const schemaProjeto = new mongoose.Schema(
     versionKey: false,
   },
 )
-
-/** Banco → API: `_id` vira `id` (texto) e é o primeiro campo, como no JSON antigo. */
-function paraApi(_documento, objeto) {
-  const { _id, ...campos } = objeto
-  return { id: String(_id), ...campos }
-}
 
 schemaProjeto.set('toJSON', { transform: paraApi })
 schemaProjeto.set('toObject', { transform: paraApi })

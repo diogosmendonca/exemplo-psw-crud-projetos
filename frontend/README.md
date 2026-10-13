@@ -145,6 +145,10 @@ No back-end deste repositório os mesmos endpoints ficam sob o prefixo `/api`
 | `PUT` | `/projetos/:id` | Substitui um projeto |
 | `DELETE` | `/projetos/:id` | Exclui um projeto |
 
+O campo **Cliente** consulta `GET /clientes`, que só existe no back-end deste
+repositório. Com o json-server o campo funciona normalmente (o cliente é gravado dentro
+do projeto), mas sem a lista de sugestões.
+
 Exemplo de projeto:
 
 ```json
@@ -152,6 +156,7 @@ Exemplo de projeto:
   "id": 1,
   "nome": "Portal do Aluno",
   "status": "ativo",
+  "cliente": { "nome": "CEFET/RJ" },
   "descricao": "Portal web para consulta de notas, faltas e horários.",
   "tecnologias": ["React", "Vite", "Bootstrap"],
   "url": "https://exemplo.com/portal-do-aluno"
@@ -226,8 +231,9 @@ sozinho ao tocar fora dele.
 3. Use o campo **Filtrar projetos** para ver **Todos**, apenas **Ativos** ou
    apenas **Inativos**.
 
-No computador, os projetos aparecem em uma tabela. No celular, aparecem em
-cartões com botões grandes, para facilitar o toque.
+No computador, os projetos aparecem em uma tabela com o nome, o cliente e o estado.
+No celular, aparecem em cartões com botões grandes, para facilitar o toque. Projetos sem
+cliente mostram "Sem cliente" (nos cartões) ou um traço (na tabela).
 
 ### Cadastrar um projeto
 
@@ -238,6 +244,7 @@ cartões com botões grandes, para facilitar o toque.
    | --- | --- | --- |
    | Nome | Sim | Nome do projeto. |
    | Estado | Sim | **Ativo** ou **Inativo**. |
+   | Cliente | Não | Escolha um cliente da lista de sugestões ou digite um nome novo: ele é cadastrado ao salvar. Maiúsculas e minúsculas não importam (`acme` é o cliente `Acme`). Deixe vazio para um projeto sem cliente. |
    | Descrição | Não | Texto livre. |
    | Tecnologias | Não | Separadas por vírgula. Ex.: `React, Node.js, PostgreSQL`. |
    | URL | Não | Endereço completo. Ex.: `https://exemplo.com`. |

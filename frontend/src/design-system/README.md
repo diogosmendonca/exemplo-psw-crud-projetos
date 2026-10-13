@@ -49,7 +49,7 @@ Importe assim: `import { Alerta, Carregando } from './design-system'`.
 | --- | --- | --- |
 | `Alerta` | Erro, aviso ou mensagem em bloco (erro de API, "não encontrado", lista vazia) | `tipo`: `perigo` (padrão) \| `aviso` \| `info` \| `sucesso` \| `neutro`; `className` |
 | `Carregando` | Enquanto dados são buscados | `children` (texto) |
-| `CampoFormulario` | Qualquer campo de formulário (rótulo + controle + erro) | `id`, `rotulo`, `erro`, `tipo`: `texto` (padrão) \| `select` \| `textarea`; demais props vão ao controle |
+| `CampoFormulario` | Qualquer campo de formulário (rótulo + controle + erro) | `id`, `rotulo`, `erro`, `ajuda` (texto de apoio), `sugestoes` (lista de valores sugeridos, num `<datalist>`), `tipo`: `texto` (padrão) \| `select` \| `textarea`; demais props vão ao controle |
 | `StatusBadge` | Mostrar status `ativo`/`inativo` | `status` |
 | `TituloPagina` | Título principal de uma tela | `children` |
 
@@ -105,6 +105,18 @@ Campo com validação (react-hook-form):
   rotulo="Nome"
   erro={errors.nome}
   {...register('nome')}
+/>
+```
+
+Campo com sugestões (aceita também um valor que não está na lista):
+
+```jsx
+<CampoFormulario
+  id="cliente-projeto"
+  rotulo="Cliente"
+  ajuda="Escolha um cliente da lista ou digite um nome novo."
+  sugestoes={['CEFET/RJ', 'Prefeitura Municipal']}
+  {...register('cliente')}
 />
 ```
 

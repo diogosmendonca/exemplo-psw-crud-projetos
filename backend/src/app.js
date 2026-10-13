@@ -4,6 +4,7 @@ import { ambiente } from './config/ambiente.js'
 import { frontendEstatico } from './middlewares/frontendEstatico.js'
 import { naoEncontrado } from './middlewares/naoEncontrado.js'
 import { tratadorDeErros } from './middlewares/tratadorDeErros.js'
+import { rotasClientes } from './rotas/clientes.js'
 import { rotasProjetos } from './rotas/projetos.js'
 
 /**
@@ -24,6 +25,7 @@ export function criarApp() {
   app.use(express.json())
 
   app.use('/api/projetos', rotasProjetos)
+  app.use('/api/clientes', rotasClientes)
   // Rota desconhecida sob /api: 404 em JSON, nunca a página do front-end.
   app.use('/api', naoEncontrado)
 

@@ -95,7 +95,12 @@ function Lista() {
               {projetosFiltrados.map((projeto) => (
                 <article className="card" key={projeto.id}>
                   <div className="card-body d-flex justify-content-between align-items-start gap-3">
-                    <h3 className="h5 card-title mb-0">{nomeDoProjeto(projeto)}</h3>
+                    <div>
+                      <h3 className="h5 card-title mb-1">{nomeDoProjeto(projeto)}</h3>
+                      <p className="card-subtitle text-body-secondary mb-0">
+                        {projeto.cliente?.nome ?? 'Sem cliente'}
+                      </p>
+                    </div>
                     <StatusBadge status={projeto.status} />
                   </div>
                   <div className="card-footer bg-transparent">
@@ -110,6 +115,7 @@ function Lista() {
                 <thead>
                   <tr>
                     <th scope="col">Projeto</th>
+                    <th scope="col">Cliente</th>
                     <th scope="col">Status</th>
                     <th scope="col">Ações</th>
                   </tr>
@@ -118,6 +124,9 @@ function Lista() {
                   {projetosFiltrados.map((projeto) => (
                     <tr key={projeto.id}>
                       <td>{nomeDoProjeto(projeto)}</td>
+                      <td>
+                        {projeto.cliente?.nome ?? <span className="text-body-secondary">—</span>}
+                      </td>
                       <td>
                         <StatusBadge status={projeto.status} />
                       </td>

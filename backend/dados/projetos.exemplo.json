@@ -4,6 +4,7 @@
     {
       "id": 1,
       "nome": "Portal do Aluno",
+      "cliente": { "nome": "CEFET/RJ" },
       "status": "ativo",
       "descricao": "Portal web para consulta de notas, faltas e horários.",
       "tecnologias": ["React", "Vite", "Bootstrap"],
@@ -12,6 +13,7 @@
     {
       "id": 2,
       "nome": "API de Biblioteca",
+      "cliente": { "nome": "CEFET/RJ" },
       "status": "ativo",
       "descricao": "Serviço REST para controle de acervo e empréstimos.",
       "tecnologias": ["Node.js", "Express", "PostgreSQL"],
@@ -20,6 +22,7 @@
     {
       "id": 3,
       "nome": "Sistema de Estoque Legado",
+      "cliente": { "nome": "Prefeitura Municipal" },
       "status": "inativo",
       "descricao": "",
       "tecnologias": ["PHP"],

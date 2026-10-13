@@ -45,6 +45,10 @@ export async function conectarMongo() {
 
   registrarOuvintes()
 
+  // Cria os índices declarados nos schemas (ex.: nome único do cliente) antes do
+  // primeiro uso. Só conhece os modelos já importados, que é o caso da API.
+  await Promise.all(Object.values(mongoose.models).map((modelo) => modelo.init()))
+
   return mongoose.connection
 }
 

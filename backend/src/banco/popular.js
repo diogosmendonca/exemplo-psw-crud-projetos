@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { ambiente } from '../config/ambiente.js'
 import { conectarMongo, desconectarMongo } from './conexao.js'
 import { Projeto } from '../modelos/projeto.js'
+import { criarProjeto } from '../repositorio/projetos.js'
 import { validarProjeto } from '../validacoes/projeto.js'
 
 /**
@@ -40,7 +41,8 @@ try {
   if (existentes > 0) {
     console.log(`A coleção já tem ${existentes} projeto(s): nada foi importado.`)
   } else {
-    await Projeto.insertMany(projetos)
+    // Um a um: cada projeto cria o seu cliente, se for novo.
+    for (const projeto of projetos) await criarProjeto(projeto)
     console.log(`✔ ${projetos.length} projeto(s) importado(s) de ${path.relative(process.cwd(), arquivo)}.`)
   }
 } catch (erro) {

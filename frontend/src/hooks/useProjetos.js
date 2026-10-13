@@ -6,6 +6,7 @@ import {
   excluirProjeto,
   listarProjetos,
 } from '../api/projetos.js'
+import { clientesQueryKey } from './useClientes.js'
 
 export const projetosQueryKey = ['projetos']
 
@@ -52,15 +53,18 @@ export function useMutacoesProjetos() {
   // devolveria 404 enquanto o modal de exclusão ainda está fechando.
   const recarregarLista = () =>
     queryClient.invalidateQueries({ queryKey: projetosQueryKey, exact: true })
+  // Salvar um projeto pode ter criado um cliente novo, que passa a ser sugerido.
+  const recarregarClientes = () => queryClient.invalidateQueries({ queryKey: clientesQueryKey })
+  const aoSalvar = () => Promise.all([recarregarLista(), recarregarClientes()])
 
   const criarMutation = useMutation({
     mutationFn: criarProjeto,
-    onSuccess: recarregarLista,
+    onSuccess: aoSalvar,
   })
 
   const atualizarMutation = useMutation({
     mutationFn: atualizarProjeto,
-    onSuccess: recarregarLista,
+    onSuccess: aoSalvar,
   })
 
   const excluirMutation = useMutation({

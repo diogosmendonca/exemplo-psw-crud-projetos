@@ -3,12 +3,14 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAviso } from './aviso/contexto.js'
 import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
+import { useClientes } from './hooks/useClientes.js'
 import { useMutacoesProjetos, useProjeto } from './hooks/useProjetos.js'
 import schemaProjeto from './schemas/projetoSchema.js'
 
 const estadoInicial = {
   nome: '',
   status: 'ativo',
+  cliente: '',
   descricao: '',
   tecnologias: '',
   url: '',
@@ -18,6 +20,7 @@ function dadosDoProjeto(projeto) {
   return {
     nome: projeto.nome ?? projeto.name ?? '',
     status: projeto.status ?? '',
+    cliente: projeto.cliente?.nome ?? '',
     descricao: projeto.descricao ?? '',
     tecnologias: Array.isArray(projeto.tecnologias)
       ? projeto.tecnologias.join(', ')
@@ -59,6 +62,7 @@ function CamposFormulario({
 }) {
   const navigate = useNavigate()
   const { mostrarSucesso } = useAviso()
+  const { clientes } = useClientes()
   const {
     register,
     handleSubmit,
@@ -72,6 +76,8 @@ function CamposFormulario({
   const submeter = async (dados) => {
     const dadosParaEnviar = {
       ...dados,
+      // A API identifica o cliente pelo nome e o cria se for novo. Vazio = sem cliente.
+      cliente: dados.cliente ? { nome: dados.cliente } : null,
       tecnologias: dados.tecnologias
         .split(',')
         .map((tecnologia) => tecnologia.trim())
@@ -122,6 +128,15 @@ function CamposFormulario({
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
           </CampoFormulario>
+
+          <CampoFormulario
+            id="cliente-projeto"
+            rotulo="Cliente"
+            ajuda="Escolha um cliente da lista ou digite um nome novo para cadastrá-lo."
+            sugestoes={clientes.map((cliente) => cliente.nome)}
+            erro={errors.cliente}
+            {...register('cliente')}
+          />
 
           <CampoFormulario
             id="descricao-projeto"
