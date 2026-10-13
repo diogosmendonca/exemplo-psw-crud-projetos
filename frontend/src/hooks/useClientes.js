@@ -3,7 +3,7 @@ import { listarClientes } from '../api/clientes.js'
 
 export const clientesQueryKey = ['clientes']
 
-/** Clientes já cadastrados, para as sugestões do campo "Cliente". */
+/** Clientes já cadastrados, para as opções do select "Cliente". */
 export function useClientes() {
   const clientesQuery = useQuery({
     queryKey: clientesQueryKey,

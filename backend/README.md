@@ -177,7 +177,7 @@ com um nome novo.
   dentro de `cliente` é ignorado. `"cliente": null` (ou omitido) deixa o projeto sem cliente.
 - **Nas respostas** o cliente vem como `{ "id": "...", "nome": "..." }`, ou `null` para
   projetos sem cliente (como os criados antes desta funcionalidade).
-- **`GET /api/clientes`** devolve a lista usada nas sugestões do formulário:
+- **`GET /api/clientes`** devolve a lista que preenche o select de cliente do formulário:
 
   ```json
   [

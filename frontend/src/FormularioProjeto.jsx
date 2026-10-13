@@ -1,16 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAviso } from './aviso/contexto.js'
 import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
 import { useClientes } from './hooks/useClientes.js'
 import { useMutacoesProjetos, useProjeto } from './hooks/useProjetos.js'
-import schemaProjeto from './schemas/projetoSchema.js'
+import schemaProjeto, { NOVO_CLIENTE } from './schemas/projetoSchema.js'
 
 const estadoInicial = {
   nome: '',
   status: 'ativo',
   cliente: '',
+  novoCliente: '',
   descricao: '',
   tecnologias: '',
   url: '',
@@ -21,6 +22,7 @@ function dadosDoProjeto(projeto) {
     nome: projeto.nome ?? projeto.name ?? '',
     status: projeto.status ?? '',
     cliente: projeto.cliente?.nome ?? '',
+    novoCliente: '',
     descricao: projeto.descricao ?? '',
     tecnologias: Array.isArray(projeto.tecnologias)
       ? projeto.tecnologias.join(', ')
@@ -67,17 +69,27 @@ function CamposFormulario({
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: dadosIniciais,
     resolver: zodResolver(schemaProjeto),
   })
 
-  const submeter = async (dados) => {
+  // O cliente atual entra na lista mesmo que ela ainda não tenha carregado:
+  // um select só mostra o valor inicial se a opção já existir quando ele aparece.
+  const nomesDeClientes = [
+    ...new Set([dadosIniciais.cliente, ...clientes.map((cliente) => cliente.nome)].filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }))
+  const cadastrandoCliente = useWatch({ control, name: 'cliente' }) === NOVO_CLIENTE
+
+  const submeter = async ({ novoCliente, ...dados }) => {
+    // A API identifica o cliente pelo nome e o cria se for novo. Vazio = sem cliente.
+    const nomeDoCliente = dados.cliente === NOVO_CLIENTE ? novoCliente : dados.cliente
+
     const dadosParaEnviar = {
       ...dados,
-      // A API identifica o cliente pelo nome e o cria se for novo. Vazio = sem cliente.
-      cliente: dados.cliente ? { nome: dados.cliente } : null,
+      cliente: nomeDoCliente ? { nome: nomeDoCliente } : null,
       tecnologias: dados.tecnologias
         .split(',')
         .map((tecnologia) => tecnologia.trim())
@@ -132,11 +144,29 @@ function CamposFormulario({
           <CampoFormulario
             id="cliente-projeto"
             rotulo="Cliente"
-            ajuda="Escolha um cliente da lista ou digite um nome novo para cadastrá-lo."
-            sugestoes={clientes.map((cliente) => cliente.nome)}
+            tipo="select"
             erro={errors.cliente}
             {...register('cliente')}
-          />
+          >
+            <option value="">Sem cliente</option>
+            {nomesDeClientes.map((nome) => (
+              <option key={nome} value={nome}>
+                {nome}
+              </option>
+            ))}
+            <option value={NOVO_CLIENTE}>+ Novo cliente…</option>
+          </CampoFormulario>
+
+          {cadastrandoCliente && (
+            <CampoFormulario
+              id="novo-cliente-projeto"
+              rotulo="Nome do novo cliente"
+              ajuda="O cliente é cadastrado ao salvar o projeto e passa a aparecer na lista."
+              erro={errors.novoCliente}
+              autoFocus
+              {...register('novoCliente')}
+            />
+          )}
 
           <CampoFormulario
             id="descricao-projeto"

@@ -147,7 +147,7 @@ No back-end deste repositório os mesmos endpoints ficam sob o prefixo `/api`
 
 O campo **Cliente** consulta `GET /clientes`, que só existe no back-end deste
 repositório. Com o json-server o campo funciona normalmente (o cliente é gravado dentro
-do projeto), mas sem a lista de sugestões.
+do projeto), mas o select só oferece "Sem cliente" e "Novo cliente…" (sem a lista de clientes).
 
 Exemplo de projeto:
 
@@ -244,7 +244,7 @@ cliente mostram "Sem cliente" (nos cartões) ou um traço (na tabela).
    | --- | --- | --- |
    | Nome | Sim | Nome do projeto. |
    | Estado | Sim | **Ativo** ou **Inativo**. |
-   | Cliente | Não | Escolha um cliente da lista de sugestões ou digite um nome novo: ele é cadastrado ao salvar. Maiúsculas e minúsculas não importam (`acme` é o cliente `Acme`). Deixe vazio para um projeto sem cliente. |
+   | Cliente | Não | Escolha um cliente na lista, ou **+ Novo cliente…** para digitar o nome de um cliente novo (ele é cadastrado ao salvar e passa a aparecer na lista). Maiúsculas e minúsculas não importam: digitar `acme` usa o cliente `Acme`. **Sem cliente** deixa o projeto sem cliente. |
    | Descrição | Não | Texto livre. |
    | Tecnologias | Não | Separadas por vírgula. Ex.: `React, Node.js, PostgreSQL`. |
    | URL | Não | Endereço completo. Ex.: `https://exemplo.com`. |

@@ -3,7 +3,7 @@ import { COLLATION_NOME, Cliente } from '../modelos/cliente.js'
 /**
  * Acesso aos clientes no MongoDB. Clientes não têm tela própria: nascem quando
  * um projeto é salvo com um cliente novo (`obterOuCriarCliente`) e alimentam a
- * lista de sugestões do formulário (`listarClientes`).
+ * lista de opções do select de cliente do formulário (`listarClientes`).
  */
 
 /** Lista os clientes em ordem alfabética (sem diferenciar maiúsculas). */
