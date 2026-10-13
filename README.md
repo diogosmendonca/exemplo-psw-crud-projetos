@@ -24,7 +24,8 @@ um com seu próprio `package.json` e suas próprias dependências.
 
 ## Como executar
 
-Pré-requisito: [Node.js](https://nodejs.org/) 22.12 ou superior.
+Pré-requisitos: [Node.js](https://nodejs.org/) 22.12 ou superior e, para o back-end, um
+MongoDB (veja como subir um com Docker no [README do back-end](backend/README.md#mongodb)).
 
 ```bash
 git clone https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git
@@ -126,6 +127,7 @@ Todas são do back-end (`backend/.env` ou ambiente do servidor). Nenhuma é obri
 | `PORT` | Porta em que a aplicação responde (padrão `3001`). |
 | `ARQUIVO_DADOS` | Onde os projetos são gravados (padrão `backend/dados/projetos.json`). Aponte para um disco/volume que persista. |
 | `PASTA_FRONTEND` | Pasta do front-end compilado (padrão `frontend/dist`). |
+| `MONGODB_URI` | Endereço do MongoDB (padrão `mongodb://localhost:27017/gerenciador-projetos`). A API não sobe sem ele. |
 | `CORS_ORIGIN` | **Não use** em produção com o front-end servido pelo back-end. Só é necessária se outro site precisar chamar a API. |
 
 > Se você copiou o `.env` de desenvolvimento para o servidor, ele pode trazer

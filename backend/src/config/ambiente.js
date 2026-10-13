@@ -37,6 +37,8 @@ export const ambiente = {
     raizDoBackend,
     process.env.ARQUIVO_DADOS ?? 'dados/projetos.json',
   ),
+  // Endereço do MongoDB (formato mongodb://[usuário:senha@]host:porta/banco).
+  mongoUri: process.env.MONGODB_URI ?? 'mongodb://localhost:27017/gerenciador-projetos',
   pastaFrontend,
   // Só serve o front-end se ele já foi compilado.
   frontendDisponivel: existsSync(path.join(pastaFrontend, 'index.html')),

@@ -17,11 +17,13 @@
   "scripts": {
     "dev": "node --watch src/servidor.js",
     "start": "node src/servidor.js",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "mongo:testar": "node src/banco/testarConexao.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mongoose": "^9.11.2"
   },
   "devDependencies": {
     "oxlint": "^1.87.0"

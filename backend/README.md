@@ -12,6 +12,9 @@ API REST do Gerenciador de Projetos, feita com Node.js e
 
 - [Node.js](https://nodejs.org/) 20.12 ou superior (recomendado 22.12+, igual ao front-end).
 
+- [MongoDB](https://www.mongodb.com/) acessível pela `MONGODB_URI`. A API **não sobe
+  sem ele**. O jeito mais simples é um container (veja [MongoDB](#mongodb)).
+
 ## Instalação e execução
 
 Dentro da pasta `backend`:
@@ -29,6 +32,7 @@ prefixo `/api` (veja [Rotas](#rotas)).
 | --- | --- |
 | `npm run dev` | Inicia a API e reinicia sozinha quando um arquivo muda. |
 | `npm start` | Inicia a API (uso em produção). |
+| `npm run mongo:testar` | Testa a conexão com o MongoDB (conecta, faz ping e mostra a versão). |
 | `npm run lint` | Executa o oxlint. |
 
 ## Rotas
@@ -198,6 +202,52 @@ API. Ele reescreve o arquivo inteiro a cada alteração e não permite que dois
 processos o usem ao mesmo tempo. Para mais que isso, o caminho natural é um banco
 de dados; as rotas não precisariam mudar, só `src/repositorio/projetos.js`.
 
+## MongoDB
+
+A API conecta ao MongoDB com o [Mongoose](https://mongoosejs.com/) ao iniciar
+(`src/banco/conexao.js`). Por enquanto **só a conexão existe**: os projetos
+continuam sendo gravados no arquivo JSON (veja [Armazenamento](#armazenamento)),
+e a troca para o MongoDB é uma etapa futura.
+
+### Subir um MongoDB com Docker
+
+```bash
+docker run -d --name mongodb-psw \
+  -p 127.0.0.1:27017:27017 \
+  -v mongodb-psw-dados:/data/db \
+  mongo:8
+```
+
+Publicar a porta em `127.0.0.1` mantém o banco acessível só pela sua máquina. Esse
+container não tem usuário e senha: serve para desenvolvimento, não para servidor.
+Depois de reiniciar o computador, use `docker start mongodb-psw`.
+
+### Testar a conexão
+
+```bash
+npm run mongo:testar
+```
+
+```text
+✔ Conectado ao MongoDB 8.3.11 em localhost:27017
+  Banco: gerenciador-projetos | ping: ok
+```
+
+Se falhar, mostra o motivo, sai com código `1` e não expõe a senha da `MONGODB_URI`:
+
+```text
+✘ Não foi possível conectar ao MongoDB em mongodb://localhost:27999/x (connect ECONNREFUSED ...). Verifique se ele está em execução e se MONGODB_URI está correta.
+```
+
+### Como a conexão se comporta
+
+- **Ao iniciar:** a API espera o banco responder por até 5 segundos. Se não
+  responder, **não sobe** e explica o problema.
+- **Banco cai com a API no ar:** o log avisa `MongoDB: desconectado inesperadamente.`
+  e o Mongoose reconecta sozinho quando ele volta (`MongoDB: reconectado.`).
+  Como os projetos ainda estão no arquivo JSON, a API continua respondendo.
+- **Ao encerrar** (`Ctrl+C` ou `SIGTERM`): a conexão é fechada antes de o processo sair.
+
 ## Servindo o front-end compilado (produção)
 
 Se a pasta `../frontend/dist` existir ao iniciar, a API também serve a aplicação
@@ -223,6 +273,7 @@ Variáveis lidas do ambiente ou do arquivo `.env` (modelo em `.env.example`):
 | `NODE_ENV` | (vazio) | Use `production` ao implantar: desliga o CORS padrão e ativa o modo de produção do Express. |
 | `CORS_ORIGIN` | `http://localhost:5173` em desenvolvimento; **nenhum** em produção | Endereço de outro site autorizado a chamar a API. Se definida, vale em qualquer modo. Em produção, com o front-end servido pela API, não é necessária. |
 | `ARQUIVO_DADOS` | `dados/projetos.json` | Arquivo JSON onde os projetos são gravados. Caminho relativo conta a partir da pasta `backend`. |
+| `MONGODB_URI` | `mongodb://localhost:27017/gerenciador-projetos` | Endereço do MongoDB, no formato `mongodb://[usuário:senha@]host:porta/banco`. |
 | `PASTA_FRONTEND` | `../frontend/dist` | Pasta com o front-end compilado. Caminho relativo conta a partir da pasta `backend`. |
 
 Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
@@ -232,6 +283,9 @@ Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
 ```text
 backend/
 ├── src/
+│   ├── banco/
+│   │   ├── conexao.js             # Conexão com o MongoDB (Mongoose)
+│   │   └── testarConexao.js       # Script do `npm run mongo:testar`
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
 │   ├── middlewares/
