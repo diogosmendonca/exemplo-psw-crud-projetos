@@ -1,4 +1,4 @@
-const STATUS_VALIDOS = ['ativo', 'inativo']
+import { STATUS_VALIDOS } from '../modelos/projeto.js'
 
 /**
  * Valida e normaliza o corpo recebido para criar ou alterar um projeto.

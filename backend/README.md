@@ -248,6 +248,29 @@ Se falhar, mostra o motivo, sai com código `1` e não expõe a senha da `MONGOD
   Como os projetos ainda estão no arquivo JSON, a API continua respondendo.
 - **Ao encerrar** (`Ctrl+C` ou `SIGTERM`): a conexão é fechada antes de o processo sair.
 
+### Schema do projeto
+
+O modelo `Projeto` (`src/modelos/projeto.js`) usa a coleção `projetos` e tem os mesmos
+campos da API: `nome` e `status` (`ativo` ou `inativo`) obrigatórios, e `descricao`,
+`tecnologias` e `url` opcionais. Espaços nas pontas de `nome` e `url` são removidos.
+Ele ainda não é usado pelas rotas.
+
+**`id` da API × `_id` do MongoDB.** A API fala em `id` (texto); o banco guarda `_id`
+(`ObjectId`). A conversão fica toda no modelo:
+
+| Sentido | Como | Resultado |
+| --- | --- | --- |
+| Banco → API | `JSON.stringify(doc)` / `resposta.json(doc)` | `_id` vira `id` (texto de 24 caracteres hexadecimais), e o `__v` some |
+| API → banco | `Projeto.paraDocumento({ id, ...dados })` | `id` vira `_id`; sem `id`, o MongoDB gera o `_id` |
+| Id vindo da URL | `idValido(id)` antes do `findById` | id fora do formato dá 404, e não `CastError` (erro 500) |
+
+```json
+{ "id": "6aceb46b5086adf91b732126", "nome": "Portal do Aluno", "status": "ativo", "descricao": "", "tecnologias": ["React"], "url": "" }
+```
+
+Os ids numéricos do arquivo JSON (1, 2, 3...) não são `ObjectId` válidos e por isso não
+viram `_id`. Ao migrar os dados, cada projeto ganha um id novo.
+
 ## Servindo o front-end compilado (produção)
 
 Se a pasta `../frontend/dist` existir ao iniciar, a API também serve a aplicação
@@ -292,6 +315,8 @@ backend/
 │   │   ├── frontendEstatico.js    # Serve frontend/dist e devolve index.html nas telas do React
 │   │   ├── naoEncontrado.js       # 404 em JSON
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
+│   ├── modelos/
+│   │   └── projeto.js             # Schema e modelo do projeto (Mongoose)
 │   ├── repositorio/
 │   │   └── projetos.js            # Leitura e gravação dos projetos no arquivo JSON
 │   ├── rotas/
