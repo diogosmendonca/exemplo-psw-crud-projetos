@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { TAMANHO_MAXIMO_NOME_CLIENTE } from '../../../compartilhado/projeto.js'
+import { TAMANHO_MAXIMO_NOME_CLIENTE } from '@gerenciador-de-projetos/compartilhado'
 import { paraApi } from './paraApi.js'
 
 /**

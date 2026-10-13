@@ -22,10 +22,10 @@
     "mongo:popular": "node src/banco/popular.js"
   },
   "dependencies": {
+    "@gerenciador-de-projetos/compartilhado": "^0.1.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "mongoose": "^9.11.2",
-    "zod": "^4.6.7"
+    "mongoose": "^9.11.2"
   },
   "devDependencies": {
     "oxlint": "^1.87.0"

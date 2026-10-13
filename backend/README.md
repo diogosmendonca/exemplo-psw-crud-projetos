@@ -20,7 +20,7 @@ API REST do Gerenciador de Projetos, feita com Node.js e
 Dentro da pasta `backend`:
 
 ```bash
-npm install
+npm install            # instala o monorepo inteiro (veja o README da raiz)
 cp .env.example .env   # opcional: sem o arquivo valem os padrões
 npm run dev
 ```
@@ -130,13 +130,10 @@ Se algum campo for inválido, a resposta é `400` com todas as mensagens:
 }
 ```
 
-A validação usa o [zod](https://zod.dev/) e **as mesmas regras do formulário do
-front-end**: elas ficam em [`compartilhado/projeto.js`](../compartilhado/projeto.js)
-e as duas pontas importam esse arquivo (o front-end monta o schema do formulário
-com as mesmas regras de nome, estado, URL e nome do cliente). Mudar uma regra lá
-vale para os dois. O arquivo recebe o `z` de quem o usa, em vez de importar o zod,
-porque o Node e o Vite não encontrariam o zod instalado em `backend/` ou `frontend/` a
-partir de uma pasta de fora. Mantenha as duas pastas na mesma versão principal do zod.
+A validação usa o `schemaProjeto` (zod) do pacote
+[`@gerenciador-de-projetos/compartilhado`](../compartilhado/src/projeto.js), o
+**mesmo schema que o formulário do front-end usa**. Mudar uma regra lá vale para os
+dois lados.
 
 ### PUT /api/projetos/:id
 
@@ -358,7 +355,7 @@ backend/
 │   │   ├── clientes.js            # Rota de /api/clientes
 │   │   └── projetos.js            # Rotas de /api/projetos
 │   ├── validacoes/
-│   │   └── projeto.js             # Validação do corpo de um projeto (zod, regras de ../compartilhado)
+│   │   └── projeto.js             # Valida o corpo de um projeto com o schemaProjeto compartilhado
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
 │   └── servidor.js                # Sobe o servidor na porta configurada
 ├── dados/

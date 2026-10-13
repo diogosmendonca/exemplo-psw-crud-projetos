@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { STATUS_PROJETO } from '../../../compartilhado/projeto.js'
+import { STATUS_PROJETO } from '@gerenciador-de-projetos/compartilhado'
 import { paraApi } from './paraApi.js'
 
 /**

@@ -1,11 +1,8 @@
-import { z } from 'zod'
-import { criarSchemasProjeto } from '../../../compartilhado/projeto.js'
-
-// As regras ficam em `compartilhado/projeto.js`, as mesmas do formulário do front-end.
-const { projeto: schemaProjeto } = criarSchemasProjeto(z)
+import { schemaProjeto } from '@gerenciador-de-projetos/compartilhado'
 
 /**
- * Valida e normaliza o corpo recebido para criar ou alterar um projeto.
+ * Valida e normaliza o corpo recebido para criar ou alterar um projeto, com o
+ * mesmo schema (zod) que o formulário do front-end usa.
  * Devolve `{ erros }` (lista de mensagens, sem repetição) ou `{ projeto }` com
  * os campos já tratados. Campos desconhecidos, inclusive `id`, são descartados.
  *

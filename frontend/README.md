@@ -42,7 +42,7 @@ frontend/
 │   ├── aviso/                        # Toast de sucesso (AvisoProvider e useAviso)
 │   ├── design-system/                # Tokens, tema Bootstrap e componentes (+ README próprio)
 │   ├── hooks/                        # Hooks do react-query (lista, projeto por id, mutações)
-│   ├── schemas/                      # Validação dos formulários (zod); regras de ../compartilhado
+│   ├── schemas/                      # Schema do formulário (estende o schemaProjeto compartilhado)
 │   ├── App.jsx                       # Rotas
 │   ├── Cabecalho.jsx                 # Barra de navegação
 │   ├── Lista.jsx                     # Listagem de projetos
@@ -83,6 +83,9 @@ npm --version
    ```bash
    npm install
    ```
+
+   O repositório é um monorepo (*npm workspaces*): o comando instala também o back-end e
+   o pacote compartilhado, num único `node_modules/` na raiz.
 
 Não é preciso instalar o json-server à parte: ele já é uma dependência de
 desenvolvimento do projeto.

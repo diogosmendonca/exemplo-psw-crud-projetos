@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@gerenciador-de-projetos/compartilhado": "^0.1.0",
     "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.103.2",
     "bootstrap": "^5.3.8",

@@ -3,12 +3,15 @@
 Exemplo de aplicação da disciplina de PSW no CEFET/RJ: CRUD de projetos com
 front-end em React e back-end em Node.js com Express.
 
-Os dois projetos vivem **neste mesmo repositório**, em pastas separadas, cada
-um com seu próprio `package.json` e suas próprias dependências. A pasta
-[`compartilhado/`](compartilhado) guarda o código usado pelos dois.
+Os projetos vivem **neste mesmo repositório**, em pastas separadas, cada um com seu
+próprio `package.json` e suas próprias dependências. Eles formam um
+[monorepo com *npm workspaces*](#monorepo-npm-workspaces): uma única instalação, feita
+na raiz, atende a todos.
 
 | Pasta | O que é | Situação |
 | --- | --- | --- |
+| [`compartilhado/`](compartilhado) | Pacote `@gerenciador-de-projetos/compartilhado` | Schemas do zod do projeto, usados pelo front-end (formulário) e pelo back-end (API). |
+
 | [`frontend/`](frontend) | Aplicação web (React, Vite, Bootstrap) | Pronto. Funciona com o back-end ou com a API simulada (json-server). |
 | [`backend/`](backend) | API REST (Node.js, Express) | CRUD completo em `/api/projetos`, com dados gravados no MongoDB. Também serve o front-end compilado em produção. |
 
@@ -18,9 +21,11 @@ um com seu próprio `package.json` e suas próprias dependências. A pasta
 .
 ├── .cursor/rules/    # Regras para agentes de IA (Cursor)
 ├── backend/          # API (Node.js + Express)
-├── compartilhado/    # Regras de validação do projeto, usadas pelo front-end e pelo back-end
+├── compartilhado/    # Pacote com os schemas (zod) usados pelo front-end e pelo back-end
 ├── frontend/         # Aplicação web (React + Vite)
 ├── LICENSE
+├── package.json      # Raiz do monorepo (workspaces e atalhos)
+├── package-lock.json # Único lockfile, para os três pacotes
 └── README.md
 ```
 
@@ -32,9 +37,10 @@ MongoDB (veja como subir um com Docker no [README do back-end](backend/README.md
 ```bash
 git clone https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git
 cd exemplo-psw-crud-projetos
+npm install              # instala front-end, back-end e compartilhado de uma vez
 ```
 
-Cada pasta é instalada e executada separadamente:
+Cada pasta é executada separadamente:
 
 - **Front-end** (com a API simulada): veja o [manual do front-end](frontend/README.md).
 - **Back-end**: veja o [README do back-end](backend/README.md).
@@ -46,14 +52,12 @@ Em dois terminais:
 ```bash
 # Terminal 1 - API em http://localhost:3001/api/projetos
 cd backend
-npm install
 npm run dev
 ```
 
 ```bash
 # Terminal 2 - aplicação em http://localhost:5173
 cd frontend
-npm install
 cp .env.example .env     # já aponta para o back-end (VITE_API_URL=http://localhost:3001/api)
 npm run dev
 ```
@@ -61,6 +65,9 @@ npm run dev
 O back-end grava os projetos no MongoDB, que começa vazio. Para carregar os três
 projetos de exemplo, rode uma vez `npm run mongo:popular` na pasta `backend`. Veja os
 detalhes no [README do back-end](backend/README.md#mongodb).
+
+Da raiz também dá para usar os atalhos `npm run dev:backend`, `npm run dev:frontend` e
+`npm run lint` (este roda o lint dos três pacotes).
 
 ## Implantação em produção
 
@@ -71,22 +78,20 @@ aplicação e a API ficam na mesma origem.
 
 ### Passo a passo
 
-1. **Compile o front-end** (gera `frontend/dist`):
+1. **Instale e compile o front-end** (gera `frontend/dist`). Na raiz do repositório:
 
    ```bash
-   cd frontend
    npm ci
    npm run build
+   npm prune --omit=dev     # opcional: remove o que só serve para desenvolver e compilar
    ```
 
    O build lê `frontend/.env.production`, que já define `VITE_API_URL=/api`, então
    o código compilado chama a API na própria origem. Não é preciso configurar nada.
 
-2. **Instale e inicie o back-end** em modo de produção:
+2. **Inicie o back-end** em modo de produção (ainda na raiz):
 
    ```bash
-   cd ../backend
-   npm ci --omit=dev
    NODE_ENV=production npm start
    ```
 
@@ -96,7 +101,7 @@ aplicação e a API ficam na mesma origem.
 3. **Carregue os dados iniciais** (opcional, só na primeira vez; o banco começa vazio):
 
    ```bash
-   npm run mongo:popular
+   npm run mongo:popular -w backend
    ```
 
 4. **Acesse** <http://localhost:3001>. A porta muda com a variável `PORT`.
@@ -145,8 +150,7 @@ Todas são do back-end (`backend/.env` ou ambiente do servidor). Nenhuma é obri
 
 ```bash
 git pull
-cd frontend && npm ci && npm run build
-cd ../backend && npm ci --omit=dev
+npm ci && npm run build && npm prune --omit=dev
 # reinicie o back-end (ele detecta o front-end compilado ao iniciar)
 ```
 
@@ -176,10 +180,32 @@ curl -i http://localhost:3001/projetos/novo    # HTML (index.html)
 
 - Um único repositório git para as duas pastas. Os commits podem tocar em
   `frontend/`, em `backend/` ou em ambos.
-- Cada pasta tem seu `.gitignore`, seu `.env.example` e seu lint (`npm run lint`).
-- `compartilhado/` não tem `package.json` nem dependências: é código puro que os dois
-  projetos importam por caminho relativo. Por isso o back-end **precisa do repositório
-  inteiro** (não só da pasta `backend/`) para rodar, mesmo em produção.
+- Cada pasta tem seu `.env.example` (quando precisa) e seu lint (`npm run lint`).
+
+### Monorepo (npm workspaces)
+
+A raiz declara os três pacotes em `workspaces` (no `package.json`). Com isso:
+
+- **Uma instalação só.** `npm install` (na raiz ou dentro de qualquer pasta) instala
+  tudo em um único `node_modules/` na raiz, com um único `package-lock.json`. As pastas
+  não têm `node_modules` nem lockfile próprios.
+- **Pacote local.** O front-end e o back-end declaram
+  `"@gerenciador-de-projetos/compartilhado"` nas dependências do seu `package.json`,
+  como qualquer pacote, e o importam pelo nome:
+
+  ```js
+  import { schemaProjeto } from '@gerenciador-de-projetos/compartilhado'
+  ```
+
+  O npm liga esse nome à pasta `compartilhado/` (um link simbólico em
+  `node_modules/`), então uma alteração lá vale na hora, sem reinstalar. O zod também
+  fica instalado uma vez só, e os três pacotes usam a mesma cópia.
+- **Comandos de um pacote a partir da raiz:** `npm run <script> -w backend` (ou
+  `-w frontend`, `-w compartilhado`). Dentro da pasta, `npm run <script>` continua
+  funcionando.
+- **Dependência nova** de um pacote: `npm install <pacote> -w backend`.
+- **Repositório inteiro.** Por depender do pacote compartilhado, o back-end precisa do
+  repositório inteiro (não só da pasta `backend/`) para ser instalado e executado.
 - Código, nomes e mensagens em português.
 
 ## Licença

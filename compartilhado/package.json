@@ -1,0 +1,26 @@
+{
+  "name": "@gerenciador-de-projetos/compartilhado",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Regras de validação do Gerenciador de Projetos, usadas pelo front-end e pelo back-end",
+  "license": "MIT",
+  "author": "Diogo Mendonça <diogosmendonca@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git",
+    "directory": "compartilhado"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "scripts": {
+    "lint": "oxlint"
+  },
+  "devDependencies": {
+    "oxlint": "^1.87.0"
+  }
+}

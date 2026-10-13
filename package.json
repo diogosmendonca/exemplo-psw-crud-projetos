@@ -1,0 +1,27 @@
+{
+  "name": "gerenciador-de-projetos-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Gerenciador de Projetos (exemplo da disciplina de PSW no CEFET/RJ): front-end, back-end e pacote compartilhado",
+  "license": "MIT",
+  "author": "Diogo Mendonça <diogosmendonca@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git"
+  },
+  "workspaces": [
+    "compartilhado",
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "start": "npm start -w backend",
+    "lint": "npm run lint --workspaces"
+  }
+}
