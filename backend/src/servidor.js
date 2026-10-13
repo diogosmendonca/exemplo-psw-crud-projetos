@@ -1,11 +1,9 @@
 import { criarApp } from './app.js'
 import { conectarMongo, desconectarMongo } from './banco/conexao.js'
 import { ambiente } from './config/ambiente.js'
-import { iniciarRepositorio } from './repositorio/projetos.js'
 
 try {
-  // Os dados precisam estar carregados antes de a API aceitar requisições.
-  await iniciarRepositorio()
+  // O banco precisa estar conectado antes de a API aceitar requisições.
   await conectarMongo()
 } catch (erro) {
   // Mensagem curta em vez de um stack trace: o problema é de configuração.
@@ -18,7 +16,6 @@ const app = criarApp()
 app.listen(ambiente.porta, () => {
   console.log(`Modo: ${ambiente.producao ? 'produção' : 'desenvolvimento'}`)
   console.log(`API em http://localhost:${ambiente.porta}/api/projetos`)
-  console.log(`Dados gravados em ${ambiente.arquivoDados}`)
   console.log('MongoDB conectado.')
 
   if (ambiente.frontendDisponivel) {

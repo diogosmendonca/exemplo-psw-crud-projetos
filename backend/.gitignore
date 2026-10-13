@@ -3,6 +3,6 @@ node_modules
 *.log
 .DS_Store
 
-# Dados gravados pela API (a cópia inicial vem de dados/projetos.exemplo.json)
+# Arquivo da época em que os projetos eram gravados em JSON. Pode ser importado
+# com "npm run mongo:popular -- dados/projetos.json".
 dados/projetos.json
-dados/*.tmp

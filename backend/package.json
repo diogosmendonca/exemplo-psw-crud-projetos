@@ -18,7 +18,8 @@
     "dev": "node --watch src/servidor.js",
     "start": "node src/servidor.js",
     "lint": "oxlint",
-    "mongo:testar": "node src/banco/testarConexao.js"
+    "mongo:testar": "node src/banco/testarConexao.js",
+    "mongo:popular": "node src/banco/popular.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

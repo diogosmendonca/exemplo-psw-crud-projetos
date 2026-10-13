@@ -4,8 +4,8 @@ API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
 > **Situação:** o CRUD de `/api/projetos` está completo (listar, buscar, criar, alterar
-> e excluir) e os dados são gravados em um arquivo JSON. Veja [Rotas](#rotas) e
-> [Armazenamento](#armazenamento). Em produção também serve o front-end
+> e excluir) e os dados são gravados no MongoDB. Veja [Rotas](#rotas) e
+> [MongoDB](#mongodb). Em produção também serve o front-end
 > compilado (veja [Servindo o front-end compilado](#servindo-o-front-end-compilado-produção)).
 
 ## Pré-requisitos
@@ -32,6 +32,7 @@ prefixo `/api` (veja [Rotas](#rotas)).
 | --- | --- |
 | `npm run dev` | Inicia a API e reinicia sozinha quando um arquivo muda. |
 | `npm start` | Inicia a API (uso em produção). |
+| `npm run mongo:popular` | Importa projetos de um JSON para o MongoDB (padrão: os exemplos). Só importa se a coleção estiver vazia. |
 | `npm run mongo:testar` | Testa a conexão com o MongoDB (conecta, faz ping e mostra a versão). |
 | `npm run lint` | Executa o oxlint. |
 
@@ -54,7 +55,7 @@ curl http://localhost:3001/api/projetos
 ```json
 [
   {
-    "id": 1,
+    "id": "6aceb46b5086adf91b732126",
     "nome": "Portal do Aluno",
     "status": "ativo",
     "descricao": "Portal web para consulta de notas, faltas e horários.",
@@ -67,12 +68,12 @@ curl http://localhost:3001/api/projetos
 ### GET /api/projetos/:id
 
 ```bash
-curl http://localhost:3001/api/projetos/2
+curl http://localhost:3001/api/projetos/6aceb46b5086adf91b732127
 ```
 
 ```json
 {
-  "id": 2,
+  "id": "6aceb46b5086adf91b732127",
   "nome": "API de Biblioteca",
   "status": "ativo",
   "descricao": "Serviço REST para controle de acervo e empréstimos.",
@@ -81,7 +82,7 @@ curl http://localhost:3001/api/projetos/2
 }
 ```
 
-Se não existir projeto com esse `id` (inclusive id não numérico), a resposta é
+Se não existir projeto com esse `id` (inclusive um id fora do formato), a resposta é
 `404` com `{ "mensagem": "Projeto não encontrado." }`.
 
 ### POST /api/projetos
@@ -96,7 +97,7 @@ Corpo da requisição (JSON):
 | `tecnologias` | Não | Lista de textos. Padrão: `[]`. |
 | `url` | Não | URL válida ou vazia. Padrão: `""`. |
 
-O `id` é gerado pela API, sempre maior que todos os anteriores. Um `id` enviado no corpo e
+O `id` é gerado pelo MongoDB. Um `id` enviado no corpo e
 campos desconhecidos são ignorados.
 
 ```bash
@@ -132,7 +133,7 @@ Substitui **todos** os dados do projeto: o corpo segue as mesmas regras do
 vem da URL e não muda; um `id` no corpo é ignorado.
 
 ```bash
-curl -i -X PUT http://localhost:3001/api/projetos/2 \
+curl -i -X PUT http://localhost:3001/api/projetos/6aceb46b5086adf91b732127 \
   -H "Content-Type: application/json" \
   -d '{"nome": "API de Biblioteca v2", "status": "inativo"}'
 ```
@@ -140,7 +141,7 @@ curl -i -X PUT http://localhost:3001/api/projetos/2 \
 | Resposta | Quando |
 | --- | --- |
 | `200` | Projeto alterado. O corpo é o projeto com os novos dados. |
-| `404` | Não existe projeto com esse `id` (inclusive id não numérico): `{ "mensagem": "Projeto não encontrado." }`. |
+| `404` | Não existe projeto com esse `id` (inclusive um id fora do formato): `{ "mensagem": "Projeto não encontrado." }`. |
 | `400` | Corpo inválido, no mesmo formato de erros do `POST`. |
 
 O `404` tem prioridade sobre o `400`: com um id inexistente, o corpo nem é validado.
@@ -148,66 +149,25 @@ O `404` tem prioridade sobre o `400`: com um id inexistente, o corpo nem é vali
 ### DELETE /api/projetos/:id
 
 ```bash
-curl -i -X DELETE http://localhost:3001/api/projetos/2
+curl -i -X DELETE http://localhost:3001/api/projetos/6aceb46b5086adf91b732127
 ```
 
 | Resposta | Quando |
 | --- | --- |
 | `204` | Projeto excluído. A resposta não tem corpo. |
-| `404` | Não existe projeto com esse `id` (inclusive id não numérico): `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
+| `404` | Não existe projeto com esse `id` (inclusive um id fora do formato): `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
 
-O id de um projeto excluído **não é reaproveitado**: os ids novos sempre
-continuam crescendo (o último id usado é guardado junto com os projetos), para que um
-link antigo nunca aponte para outro projeto.
-
-## Armazenamento
-
-Os projetos são gravados em um **arquivo JSON**: `dados/projetos.json`.
-
-```json
-{
-  "ultimoId": 3,
-  "projetos": [
-    { "id": 1, "nome": "Portal do Aluno", "status": "ativo", "descricao": "", "tecnologias": [], "url": "" }
-  ]
-}
-```
-
-- **Primeira execução:** se `dados/projetos.json` não existe, a API o cria como
-  uma cópia de `dados/projetos.exemplo.json` (três projetos de exemplo).
-- **Git:** só o arquivo de exemplo é versionado. O `projetos.json` está no
-  `.gitignore`, então usar a API não suja o repositório.
-- **Voltar aos dados de exemplo:** pare a API e apague `dados/projetos.json`; ele
-  será recriado na próxima execução.
-- **`ultimoId`:** o último id já usado. Ele garante que o id de um projeto
-  excluído nunca seja reaproveitado, nem depois de reiniciar a API.
-- **Edição manual:** o arquivo é lido **uma vez, ao iniciar**. Para editá-lo à
-  mão, pare a API antes. Se o `ultimoId` faltar, a API usa o maior id existente.
-- **Arquivo inválido:** se o conteúdo não for um JSON no formato acima, a API não
-  sobe e informa o problema, em vez de sobrescrever os dados.
-
-Como funciona (`src/repositorio/projetos.js`):
-
-- Cada alteração (`POST`, `PUT`, `DELETE`) é gravada no arquivo **antes** de passar
-  a valer. Se a gravação falhar, a API responde `500` e nada muda.
-- A gravação é atômica: escreve em um arquivo temporário e o renomeia, então o
-  arquivo nunca fica pela metade, mesmo se a API cair no meio.
-- As alterações são executadas uma de cada vez, para que requisições simultâneas
-  não se sobrescrevam.
-
-### Limites desta solução
-
-Um arquivo JSON serve para um exemplo e para uso com **uma única instância** da
-API. Ele reescreve o arquivo inteiro a cada alteração e não permite que dois
-processos o usem ao mesmo tempo. Para mais que isso, o caminho natural é um banco
-de dados; as rotas não precisariam mudar, só `src/repositorio/projetos.js`.
+O id de um projeto excluído **não é reaproveitado**: o MongoDB gera ids únicos, então
+um link antigo nunca aponta para outro projeto.
 
 ## MongoDB
 
-A API conecta ao MongoDB com o [Mongoose](https://mongoosejs.com/) ao iniciar
-(`src/banco/conexao.js`). Por enquanto **só a conexão existe**: os projetos
-continuam sendo gravados no arquivo JSON (veja [Armazenamento](#armazenamento)),
-e a troca para o MongoDB é uma etapa futura.
+Os projetos são gravados no MongoDB, na coleção `projetos`, com o
+[Mongoose](https://mongoosejs.com/):
+
+- `src/banco/conexao.js` conecta ao banco ao iniciar a API;
+- `src/modelos/projeto.js` define o schema (veja [Schema do projeto](#schema-do-projeto));
+- `src/repositorio/projetos.js` faz as consultas. As rotas só falam com ele.
 
 ### Subir um MongoDB com Docker
 
@@ -221,6 +181,33 @@ docker run -d --name mongodb-psw \
 Publicar a porta em `127.0.0.1` mantém o banco acessível só pela sua máquina. Esse
 container não tem usuário e senha: serve para desenvolvimento, não para servidor.
 Depois de reiniciar o computador, use `docker start mongodb-psw`.
+
+### Dados iniciais
+
+O banco começa **vazio**. Para carregar os três projetos de exemplo
+(`dados/projetos.exemplo.json`):
+
+```bash
+npm run mongo:popular
+```
+
+O comando só importa se a coleção estiver vazia, então rodá-lo de novo não duplica
+nada. Para importar outro arquivo, passe o caminho. Serve também para trazer os
+projetos de uma versão antiga, que gravava em `dados/projetos.json`:
+
+```bash
+npm run mongo:popular -- dados/projetos.json
+```
+
+O arquivo pode ser `{ "projetos": [...] }` ou uma lista. Os `id` dele são descartados
+(o MongoDB gera os seus) e cada projeto passa pela mesma validação da API.
+
+Para zerar o banco, apague a coleção e rode o comando de novo:
+
+```bash
+docker exec mongodb-psw mongosh gerenciador-projetos --eval "db.projetos.drop()"
+npm run mongo:popular
+```
 
 ### Testar a conexão
 
@@ -244,8 +231,9 @@ Se falhar, mostra o motivo, sai com código `1` e não expõe a senha da `MONGOD
 - **Ao iniciar:** a API espera o banco responder por até 5 segundos. Se não
   responder, **não sobe** e explica o problema.
 - **Banco cai com a API no ar:** o log avisa `MongoDB: desconectado inesperadamente.`
-  e o Mongoose reconecta sozinho quando ele volta (`MongoDB: reconectado.`).
-  Como os projetos ainda estão no arquivo JSON, a API continua respondendo.
+  e as rotas de projetos respondem `500` (depois de até 5 segundos de espera) enquanto
+  ele estiver fora. O Mongoose reconecta sozinho quando ele volta
+  (`MongoDB: reconectado.`) e a API volta a funcionar sem reiniciar.
 - **Ao encerrar** (`Ctrl+C` ou `SIGTERM`): a conexão é fechada antes de o processo sair.
 
 ### Schema do projeto
@@ -253,7 +241,7 @@ Se falhar, mostra o motivo, sai com código `1` e não expõe a senha da `MONGOD
 O modelo `Projeto` (`src/modelos/projeto.js`) usa a coleção `projetos` e tem os mesmos
 campos da API: `nome` e `status` (`ativo` ou `inativo`) obrigatórios, e `descricao`,
 `tecnologias` e `url` opcionais. Espaços nas pontas de `nome` e `url` são removidos.
-Ele ainda não é usado pelas rotas.
+É usado por `src/repositorio/projetos.js`.
 
 **`id` da API × `_id` do MongoDB.** A API fala em `id` (texto); o banco guarda `_id`
 (`ObjectId`). A conversão fica toda no modelo:
@@ -268,8 +256,9 @@ Ele ainda não é usado pelas rotas.
 { "id": "6aceb46b5086adf91b732126", "nome": "Portal do Aluno", "status": "ativo", "descricao": "", "tecnologias": ["React"], "url": "" }
 ```
 
-Os ids numéricos do arquivo JSON (1, 2, 3...) não são `ObjectId` válidos e por isso não
-viram `_id`. Ao migrar os dados, cada projeto ganha um id novo.
+O repositório trata um id fora do formato como projeto inexistente: `GET /api/projetos/1`
+responde `404`, como qualquer id que não existe. Os ids numéricos da versão antiga
+(1, 2, 3...) deixaram de valer: ao importar os dados, cada projeto ganha um id novo.
 
 ## Servindo o front-end compilado (produção)
 
@@ -295,8 +284,7 @@ Variáveis lidas do ambiente ou do arquivo `.env` (modelo em `.env.example`):
 | `PORT` | `3001` | Porta da API (e da aplicação, quando o front-end compilado é servido). Não é `3000` para não colidir com o json-server do front-end enquanto os dois coexistirem. |
 | `NODE_ENV` | (vazio) | Use `production` ao implantar: desliga o CORS padrão e ativa o modo de produção do Express. |
 | `CORS_ORIGIN` | `http://localhost:5173` em desenvolvimento; **nenhum** em produção | Endereço de outro site autorizado a chamar a API. Se definida, vale em qualquer modo. Em produção, com o front-end servido pela API, não é necessária. |
-| `ARQUIVO_DADOS` | `dados/projetos.json` | Arquivo JSON onde os projetos são gravados. Caminho relativo conta a partir da pasta `backend`. |
-| `MONGODB_URI` | `mongodb://localhost:27017/gerenciador-projetos` | Endereço do MongoDB, no formato `mongodb://[usuário:senha@]host:porta/banco`. |
+| `MONGODB_URI` | `mongodb://localhost:27017/gerenciador-projetos` | Endereço do MongoDB onde os projetos são gravados, no formato `mongodb://[usuário:senha@]host:porta/banco`. |
 | `PASTA_FRONTEND` | `../frontend/dist` | Pasta com o front-end compilado. Caminho relativo conta a partir da pasta `backend`. |
 
 Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
@@ -308,6 +296,7 @@ backend/
 ├── src/
 │   ├── banco/
 │   │   ├── conexao.js             # Conexão com o MongoDB (Mongoose)
+│   │   ├── popular.js             # Script do `npm run mongo:popular`
 │   │   └── testarConexao.js       # Script do `npm run mongo:testar`
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
@@ -318,7 +307,7 @@ backend/
 │   ├── modelos/
 │   │   └── projeto.js             # Schema e modelo do projeto (Mongoose)
 │   ├── repositorio/
-│   │   └── projetos.js            # Leitura e gravação dos projetos no arquivo JSON
+│   │   └── projetos.js            # Consultas dos projetos no MongoDB
 │   ├── rotas/
 │   │   └── projetos.js            # Rotas de /api/projetos
 │   ├── validacoes/
@@ -326,14 +315,13 @@ backend/
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
 │   └── servidor.js                # Sobe o servidor na porta configurada
 ├── dados/
-│   ├── projetos.exemplo.json      # Dados iniciais (versionado)
-│   └── projetos.json              # Dados em uso (criado pela API; ignorado pelo git)
+│   └── projetos.exemplo.json      # Dados iniciais, importados por `npm run mongo:popular`
 ├── .env.example
 └── package.json
 ```
 
-- As rotas não conhecem o arquivo: falam só com o `repositorio/`. Trocar o JSON por
-  um banco de dados mexe apenas nele.
+- As rotas não conhecem o banco: falam só com o `repositorio/`. Foi por isso que trocar
+  o arquivo JSON pelo MongoDB mexeu quase só nele.
 - `app.js` só **monta** a aplicação e `servidor.js` só **sobe** o servidor. Essa
   separação permite testar a API sem abrir uma porta.
 - Cada recurso tem seu arquivo em `rotas/`, registrado em `app.js` antes de `naoEncontrado`.

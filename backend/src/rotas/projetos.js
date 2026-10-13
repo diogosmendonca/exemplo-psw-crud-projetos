@@ -14,13 +14,13 @@ const projetoNaoEncontrado = (resposta) =>
   resposta.status(404).json({ mensagem: 'Projeto não encontrado.' })
 
 // GET /projetos - lista todos os projetos.
-rotasProjetos.get('/', (requisicao, resposta) => {
-  resposta.json(listarProjetos())
+rotasProjetos.get('/', async (requisicao, resposta) => {
+  resposta.json(await listarProjetos())
 })
 
 // GET /projetos/:id - devolve os dados de um projeto.
-rotasProjetos.get('/:id', (requisicao, resposta) => {
-  const projeto = buscarProjeto(requisicao.params.id)
+rotasProjetos.get('/:id', async (requisicao, resposta) => {
+  const projeto = await buscarProjeto(requisicao.params.id)
 
   if (!projeto) return projetoNaoEncontrado(resposta)
 
@@ -28,8 +28,7 @@ rotasProjetos.get('/:id', (requisicao, resposta) => {
 })
 
 // POST /projetos - cria um projeto a partir do JSON do corpo da requisição.
-// O id é sempre gerado pela API (nunca reaproveita ids excluídos): um `id`
-// enviado pelo cliente é ignorado.
+// O id é sempre gerado pelo MongoDB: um `id` enviado pelo cliente é ignorado.
 rotasProjetos.post('/', async (requisicao, resposta) => {
   const { projeto, erros } = validarProjeto(requisicao.body)
 
@@ -47,7 +46,7 @@ rotasProjetos.post('/', async (requisicao, resposta) => {
 rotasProjetos.put('/:id', async (requisicao, resposta) => {
   const { id } = requisicao.params
 
-  if (!buscarProjeto(id)) return projetoNaoEncontrado(resposta)
+  if (!(await buscarProjeto(id))) return projetoNaoEncontrado(resposta)
 
   const { projeto, erros } = validarProjeto(requisicao.body)
 
@@ -57,7 +56,7 @@ rotasProjetos.put('/:id', async (requisicao, resposta) => {
 
   const projetoAlterado = await alterarProjeto(id, projeto)
 
-  // `null`: o projeto foi excluído por outra requisição entre a checagem e a gravação.
+  // `null`: o projeto foi excluído por outra requisição entre a checagem e a alteração.
   if (!projetoAlterado) return projetoNaoEncontrado(resposta)
 
   resposta.json(projetoAlterado)
