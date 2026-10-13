@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { STATUS_PROJETO } from '../../../compartilhado/projeto.js'
 import { paraApi } from './paraApi.js'
 
 /**
@@ -23,8 +24,6 @@ import { paraApi } from './paraApi.js'
  * não podem ser reaproveitados como `_id`.
  */
 
-export const STATUS_VALIDOS = ['ativo', 'inativo']
-
 const FORMATO_ID = /^[0-9a-f]{24}$/i
 
 /** Diz se o texto é um id possível (24 caracteres hexadecimais). */
@@ -43,8 +42,8 @@ const schemaProjeto = new mongoose.Schema(
       type: String,
       required: [true, 'Informe o status do projeto.'],
       enum: {
-        values: STATUS_VALIDOS,
-        message: `O status deve ser um destes valores: ${STATUS_VALIDOS.join(', ')}.`,
+        values: STATUS_PROJETO,
+        message: `O status deve ser um destes valores: ${STATUS_PROJETO.join(', ')}.`,
       },
     },
     // Referência ao cliente (`_id` na coleção `cliente`). Opcional: projetos

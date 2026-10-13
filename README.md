@@ -4,7 +4,8 @@ Exemplo de aplicação da disciplina de PSW no CEFET/RJ: CRUD de projetos com
 front-end em React e back-end em Node.js com Express.
 
 Os dois projetos vivem **neste mesmo repositório**, em pastas separadas, cada
-um com seu próprio `package.json` e suas próprias dependências.
+um com seu próprio `package.json` e suas próprias dependências. A pasta
+[`compartilhado/`](compartilhado) guarda o código usado pelos dois.
 
 | Pasta | O que é | Situação |
 | --- | --- | --- |
@@ -17,6 +18,7 @@ um com seu próprio `package.json` e suas próprias dependências.
 .
 ├── .cursor/rules/    # Regras para agentes de IA (Cursor)
 ├── backend/          # API (Node.js + Express)
+├── compartilhado/    # Regras de validação do projeto, usadas pelo front-end e pelo back-end
 ├── frontend/         # Aplicação web (React + Vite)
 ├── LICENSE
 └── README.md
@@ -175,6 +177,9 @@ curl -i http://localhost:3001/projetos/novo    # HTML (index.html)
 - Um único repositório git para as duas pastas. Os commits podem tocar em
   `frontend/`, em `backend/` ou em ambos.
 - Cada pasta tem seu `.gitignore`, seu `.env.example` e seu lint (`npm run lint`).
+- `compartilhado/` não tem `package.json` nem dependências: é código puro que os dois
+  projetos importam por caminho relativo. Por isso o back-end **precisa do repositório
+  inteiro** (não só da pasta `backend/`) para rodar, mesmo em produção.
 - Código, nomes e mensagens em português.
 
 ## Licença

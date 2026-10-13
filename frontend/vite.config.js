@@ -4,6 +4,11 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    // Permite importar `../compartilhado/` (regras de validação usadas também
+    // pelo back-end), que fica fora da pasta do front-end.
+    fs: { allow: ['..'] },
+  },
   css: {
     preprocessorOptions: {
       scss: {

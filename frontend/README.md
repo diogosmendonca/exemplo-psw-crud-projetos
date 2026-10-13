@@ -42,7 +42,7 @@ frontend/
 │   ├── aviso/                        # Toast de sucesso (AvisoProvider e useAviso)
 │   ├── design-system/                # Tokens, tema Bootstrap e componentes (+ README próprio)
 │   ├── hooks/                        # Hooks do react-query (lista, projeto por id, mutações)
-│   ├── schemas/                      # Validação dos formulários (zod)
+│   ├── schemas/                      # Validação dos formulários (zod); regras de ../compartilhado
 │   ├── App.jsx                       # Rotas
 │   ├── Cabecalho.jsx                 # Barra de navegação
 │   ├── Lista.jsx                     # Listagem de projetos

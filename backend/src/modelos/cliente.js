@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { TAMANHO_MAXIMO_NOME_CLIENTE } from '../../../compartilhado/projeto.js'
 import { paraApi } from './paraApi.js'
 
 /**
@@ -15,15 +16,16 @@ import { paraApi } from './paraApi.js'
  */
 export const COLLATION_NOME = { locale: 'pt', strength: 2 }
 
-export const TAMANHO_MAXIMO_NOME = 100
-
 const schemaCliente = new mongoose.Schema(
   {
     nome: {
       type: String,
       required: [true, 'Informe o nome do cliente.'],
       trim: true,
-      maxlength: [TAMANHO_MAXIMO_NOME, `O nome do cliente deve ter até ${TAMANHO_MAXIMO_NOME} caracteres.`],
+      maxlength: [
+        TAMANHO_MAXIMO_NOME_CLIENTE,
+        `O nome do cliente deve ter até ${TAMANHO_MAXIMO_NOME_CLIENTE} caracteres.`,
+      ],
     },
   },
   { collection: 'cliente', versionKey: false },
