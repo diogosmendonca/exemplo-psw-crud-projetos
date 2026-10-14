@@ -1,13 +1,12 @@
 import mongoose from 'mongoose'
 import { TAMANHO_MAXIMO_NOME_CLIENTE } from '@gerenciador-de-projetos/compartilhado'
-import { paraApi } from './paraApi.js'
 
 /**
  * Schema e modelo do cliente, na coleção `cliente`.
  *
  * Um cliente pode ter muitos projetos, e cada projeto tem (no máximo) um
  * cliente: a ligação fica no projeto (`Projeto.cliente`, uma referência ao
- * `_id` do cliente). O `id` da API é o `_id` do MongoDB, como no projeto.
+ * `_id` do cliente).
  */
 
 /**
@@ -34,8 +33,5 @@ const schemaCliente = new mongoose.Schema(
 // Nome único (sem diferenciar maiúsculas). É isso que impede dois clientes
 // "Acme" quando dois projetos são salvos ao mesmo tempo.
 schemaCliente.index({ nome: 1 }, { unique: true, collation: COLLATION_NOME })
-
-schemaCliente.set('toJSON', { transform: paraApi })
-schemaCliente.set('toObject', { transform: paraApi })
 
 export const Cliente = mongoose.model('Cliente', schemaCliente)

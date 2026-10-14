@@ -18,14 +18,22 @@
     "dev": "node --watch src/servidor.js",
     "start": "node src/servidor.js",
     "lint": "oxlint",
-    "mongo:testar": "node src/banco/testarConexao.js",
-    "mongo:popular": "node src/banco/popular.js"
+    "banco:testar": "node src/scripts/testarConexao.js",
+    "banco:popular": "node src/scripts/popular.js",
+    "prisma:gerar": "prisma generate",
+    "prisma:migrar": "prisma migrate deploy",
+    "prisma:nova-migracao": "prisma migrate dev",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@gerenciador-de-projetos/compartilhado": "^0.1.0",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "mongoose": "^9.11.2"
+    "mongoose": "^9.11.2",
+    "pg": "^8.23.1",
+    "prisma": "^7.10.0"
   },
   "devDependencies": {
     "oxlint": "^1.87.0"

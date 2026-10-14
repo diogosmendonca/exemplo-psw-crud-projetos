@@ -13,7 +13,7 @@ na raiz, atende a todos.
 | [`compartilhado/`](compartilhado) | Pacote `@gerenciador-de-projetos/compartilhado` | Schemas do zod do projeto, usados pelo front-end (formulário) e pelo back-end (API). |
 
 | [`frontend/`](frontend) | Aplicação web (React, Vite, Bootstrap) | Pronto. Funciona com o back-end ou com a API simulada (json-server). |
-| [`backend/`](backend) | API REST (Node.js, Express) | CRUD completo em `/api/projetos`, com dados gravados no MongoDB. Também serve o front-end compilado em produção. |
+| [`backend/`](backend) | API REST (Node.js, Express) | CRUD completo em `/api/projetos`, com dados gravados no MongoDB ou no PostgreSQL (padrão DAO, Prisma). Também serve o front-end compilado em produção. |
 
 ## Estrutura
 
@@ -32,7 +32,8 @@ na raiz, atende a todos.
 ## Como executar
 
 Pré-requisitos: [Node.js](https://nodejs.org/) 22.12 ou superior e, para o back-end, um
-MongoDB (veja como subir um com Docker no [README do back-end](backend/README.md#mongodb)).
+MongoDB ou um PostgreSQL, à escolha na variável `BANCO` de `backend/.env` (veja como
+subir cada um com Docker no [README do back-end](backend/README.md#bancos-de-dados)).
 
 ```bash
 git clone https://github.com/diogosmendonca/exemplo-psw-crud-projetos.git
@@ -62,9 +63,11 @@ cp .env.example .env     # já aponta para o back-end (VITE_API_URL=http://local
 npm run dev
 ```
 
-O back-end grava os projetos no MongoDB, que começa vazio. Para carregar os três
-projetos de exemplo, rode uma vez `npm run mongo:popular` na pasta `backend`. Veja os
-detalhes no [README do back-end](backend/README.md#mongodb).
+O back-end grava os projetos no MongoDB (padrão) ou no PostgreSQL, que começam vazios.
+Para carregar os três projetos de exemplo, rode uma vez `npm run banco:popular` na
+pasta `backend`. Com o PostgreSQL, antes disso crie as tabelas com
+`npm run prisma:migrar`. Veja os detalhes no
+[README do back-end](backend/README.md#bancos-de-dados).
 
 Da raiz também dá para usar os atalhos `npm run dev:backend`, `npm run dev:frontend` e
 `npm run lint` (este roda o lint dos três pacotes).
@@ -98,10 +101,17 @@ aplicação e a API ficam na mesma origem.
    No Windows (PowerShell): `$env:NODE_ENV="production"; npm start`. Em qualquer
    sistema, também vale colocar `NODE_ENV=production` em `backend/.env`.
 
-3. **Carregue os dados iniciais** (opcional, só na primeira vez; o banco começa vazio):
+3. **Prepare o banco** escolhido em `BANCO` (só na primeira vez). Com o PostgreSQL,
+   crie ou atualize as tabelas (repita a cada nova versão que traga migrações):
 
    ```bash
-   npm run mongo:popular -w backend
+   npm run prisma:migrar -w backend
+   ```
+
+   Depois, se quiser, carregue os dados de exemplo (o banco começa vazio):
+
+   ```bash
+   npm run banco:popular -w backend
    ```
 
 4. **Acesse** <http://localhost:3001>. A porta muda com a variável `PORT`.
@@ -111,7 +121,7 @@ Ao iniciar, o back-end informa o que está servindo:
 ```text
 Modo: produção
 API em http://localhost:3001/api/projetos
-MongoDB conectado.
+Banco: MongoDB em mongodb://localhost:27017/gerenciador-projetos
 Aplicação em http://localhost:3001 (arquivos de .../frontend/dist)
 ```
 
@@ -139,7 +149,9 @@ Todas são do back-end (`backend/.env` ou ambiente do servidor). Nenhuma é obri
 | `NODE_ENV=production` | Ativa o modo de produção: desliga o CORS padrão de desenvolvimento e o modo de desenvolvimento do Express. |
 | `PORT` | Porta em que a aplicação responde (padrão `3001`). |
 | `PASTA_FRONTEND` | Pasta do front-end compilado (padrão `frontend/dist`). |
-| `MONGODB_URI` | Endereço do MongoDB onde os projetos são gravados (padrão `mongodb://localhost:27017/gerenciador-projetos`). A API não sobe sem ele. Em servidor, use um banco com usuário e senha. |
+| `BANCO` | Banco onde os projetos são gravados: `mongodb` (padrão) ou `postgres`. |
+| `MONGODB_URI` | Endereço do MongoDB, com `BANCO=mongodb` (padrão `mongodb://localhost:27017/gerenciador-projetos`). |
+| `POSTGRES_URL` | Endereço do PostgreSQL, com `BANCO=postgres` (padrão `postgresql://psw:psw@localhost:5432/gerenciador_projetos`). |
 | `CORS_ORIGIN` | **Não use** em produção com o front-end servido pelo back-end. Só é necessária se outro site precisar chamar a API. |
 
 > Se você copiou o `.env` de desenvolvimento para o servidor, ele pode trazer
@@ -151,18 +163,19 @@ Todas são do back-end (`backend/.env` ou ambiente do servidor). Nenhuma é obri
 ```bash
 git pull
 npm ci && npm run build && npm prune --omit=dev
+npm run prisma:migrar -w backend   # só com BANCO=postgres: aplica migrações novas
 # reinicie o back-end (ele detecta o front-end compilado ao iniciar)
 ```
 
-Os projetos ficam no MongoDB e não são alterados por atualizações.
+Os projetos ficam no banco e não são apagados por atualizações.
 
 ### Cuidados
 
 - **Banco com senha.** O container do README do back-end não tem usuário nem senha:
-  serve para desenvolvimento. Em um servidor, use um MongoDB com autenticação e
-  informe-a na `MONGODB_URI`.
-- **Backup.** Os projetos estão só no MongoDB: faça cópias periódicas dele (por
-  exemplo, com `mongodump`).
+  serve para desenvolvimento (o do PostgreSQL usa a senha fraca `psw`). Em um
+  servidor, use um banco com senha forte e informe-a na `MONGODB_URI` ou na `POSTGRES_URL`.
+- **Backup.** Os projetos estão só no banco: faça cópias periódicas dele (por
+  exemplo, com `mongodump` ou `pg_dump`).
 - **Manter no ar.** `npm start` termina quando o terminal fecha. Em um servidor,
   use um gerenciador de processos (como `pm2` ou `systemd`) para iniciar com a
   máquina e reiniciar em caso de falha.

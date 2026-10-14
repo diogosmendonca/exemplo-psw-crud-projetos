@@ -1,72 +1,75 @@
 import { Router } from 'express'
-import {
-  alterarProjeto,
-  buscarProjeto,
-  criarProjeto,
-  excluirProjeto,
-  listarProjetos,
-} from '../repositorio/projetos.js'
 import { validarProjeto } from '../validacoes/projeto.js'
-
-export const rotasProjetos = Router()
 
 const projetoNaoEncontrado = (resposta) =>
   resposta.status(404).json({ mensagem: 'Projeto não encontrado.' })
 
-// GET /projetos - lista todos os projetos.
-rotasProjetos.get('/', async (requisicao, resposta) => {
-  resposta.json(await listarProjetos())
-})
+/**
+ * Rotas de projetos. Recebem o DAO em vez de importá-lo: elas não sabem (nem
+ * precisam saber) se os dados estão no MongoDB ou no PostgreSQL.
+ *
+ * @param {import('../dao/ProjetoDAO.js').ProjetoDAO} projetos
+ */
+export function criarRotasProjetos(projetos) {
+  const rotas = Router()
 
-// GET /projetos/:id - devolve os dados de um projeto.
-rotasProjetos.get('/:id', async (requisicao, resposta) => {
-  const projeto = await buscarProjeto(requisicao.params.id)
+  // GET /projetos - lista todos os projetos.
+  rotas.get('/', async (requisicao, resposta) => {
+    resposta.json(await projetos.listar())
+  })
 
-  if (!projeto) return projetoNaoEncontrado(resposta)
+  // GET /projetos/:id - devolve os dados de um projeto.
+  rotas.get('/:id', async (requisicao, resposta) => {
+    const projeto = await projetos.buscarPorId(requisicao.params.id)
 
-  resposta.json(projeto)
-})
+    if (!projeto) return projetoNaoEncontrado(resposta)
 
-// POST /projetos - cria um projeto a partir do JSON do corpo da requisição.
-// O id é sempre gerado pelo MongoDB: um `id` enviado pelo cliente é ignorado.
-rotasProjetos.post('/', async (requisicao, resposta) => {
-  const { projeto, erros } = validarProjeto(requisicao.body)
+    resposta.json(projeto)
+  })
 
-  if (erros) {
-    return resposta.status(400).json({ mensagem: 'Projeto inválido.', erros })
-  }
+  // POST /projetos - cria um projeto a partir do JSON do corpo da requisição.
+  // O id é sempre gerado pelo banco: um `id` enviado pelo cliente é ignorado.
+  rotas.post('/', async (requisicao, resposta) => {
+    const { projeto, erros } = validarProjeto(requisicao.body)
 
-  const novoProjeto = await criarProjeto(projeto)
+    if (erros) {
+      return resposta.status(400).json({ mensagem: 'Projeto inválido.', erros })
+    }
 
-  resposta.status(201).location(`/projetos/${novoProjeto.id}`).json(novoProjeto)
-})
+    const novoProjeto = await projetos.criar(projeto)
 
-// PUT /projetos/:id - substitui os dados do projeto pelo JSON do corpo.
-// O id vem da URL e nunca muda: um `id` no corpo é ignorado.
-rotasProjetos.put('/:id', async (requisicao, resposta) => {
-  const { id } = requisicao.params
+    resposta.status(201).location(`/projetos/${novoProjeto.id}`).json(novoProjeto)
+  })
 
-  if (!(await buscarProjeto(id))) return projetoNaoEncontrado(resposta)
+  // PUT /projetos/:id - substitui os dados do projeto pelo JSON do corpo.
+  // O id vem da URL e nunca muda: um `id` no corpo é ignorado.
+  rotas.put('/:id', async (requisicao, resposta) => {
+    const { id } = requisicao.params
 
-  const { projeto, erros } = validarProjeto(requisicao.body)
+    if (!(await projetos.buscarPorId(id))) return projetoNaoEncontrado(resposta)
 
-  if (erros) {
-    return resposta.status(400).json({ mensagem: 'Projeto inválido.', erros })
-  }
+    const { projeto, erros } = validarProjeto(requisicao.body)
 
-  const projetoAlterado = await alterarProjeto(id, projeto)
+    if (erros) {
+      return resposta.status(400).json({ mensagem: 'Projeto inválido.', erros })
+    }
 
-  // `null`: o projeto foi excluído por outra requisição entre a checagem e a alteração.
-  if (!projetoAlterado) return projetoNaoEncontrado(resposta)
+    const projetoAlterado = await projetos.alterar(id, projeto)
 
-  resposta.json(projetoAlterado)
-})
+    // `null`: o projeto foi excluído por outra requisição entre a checagem e a alteração.
+    if (!projetoAlterado) return projetoNaoEncontrado(resposta)
 
-// DELETE /projetos/:id - exclui o projeto.
-rotasProjetos.delete('/:id', async (requisicao, resposta) => {
-  const excluiu = await excluirProjeto(requisicao.params.id)
+    resposta.json(projetoAlterado)
+  })
 
-  if (!excluiu) return projetoNaoEncontrado(resposta)
+  // DELETE /projetos/:id - exclui o projeto.
+  rotas.delete('/:id', async (requisicao, resposta) => {
+    const excluiu = await projetos.excluir(requisicao.params.id)
 
-  resposta.status(204).end()
-})
+    if (!excluiu) return projetoNaoEncontrado(resposta)
+
+    resposta.status(204).end()
+  })
+
+  return rotas
+}

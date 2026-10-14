@@ -31,8 +31,13 @@ export const ambiente = {
   // essa origem. Em produção o front-end é servido pela própria API (mesma
   // origem), então não há CORS, a menos que `CORS_ORIGIN` seja definido.
   origemPermitida: process.env.CORS_ORIGIN ?? (producao ? null : 'http://localhost:5173'),
+  // Banco onde os projetos são gravados: "mongodb" ou "postgres".
+  banco: (process.env.BANCO ?? 'mongodb').trim().toLowerCase(),
   // Endereço do MongoDB (formato mongodb://[usuário:senha@]host:porta/banco).
   mongoUri: process.env.MONGODB_URI ?? 'mongodb://localhost:27017/gerenciador-projetos',
+  // Endereço do PostgreSQL (formato postgresql://usuário:senha@host:porta/banco).
+  postgresUrl:
+    process.env.POSTGRES_URL ?? 'postgresql://psw:psw@localhost:5432/gerenciador_projetos',
   pastaFrontend,
   // Só serve o front-end se ele já foi compilado.
   frontendDisponivel: existsSync(path.join(pastaFrontend, 'index.html')),

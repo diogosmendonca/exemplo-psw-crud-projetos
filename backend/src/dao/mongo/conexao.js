@@ -1,13 +1,9 @@
 import mongoose from 'mongoose'
-import { ambiente } from '../config/ambiente.js'
+import { ambiente } from '../../config/ambiente.js'
+import { enderecoSemSenha } from '../enderecoSemSenha.js'
 
 // Se o MongoDB não responder neste tempo, a conexão falha (o padrão do driver é 30 s).
 const TEMPO_LIMITE_MS = 5000
-
-/** Endereço do MongoDB sem usuário e senha, seguro para aparecer em logs. */
-function enderecoSemSenha() {
-  return ambiente.mongoUri.replace(/\/\/[^@/]*@/, '//***@')
-}
 
 let ouvintesRegistrados = false
 let encerrando = false
@@ -37,7 +33,7 @@ export async function conectarMongo() {
     await mongoose.connect(ambiente.mongoUri, { serverSelectionTimeoutMS: TEMPO_LIMITE_MS })
   } catch (erro) {
     throw new Error(
-      `Não foi possível conectar ao MongoDB em ${enderecoSemSenha()} (${erro.message}). ` +
+      `Não foi possível conectar ao MongoDB em ${enderecoSemSenha(ambiente.mongoUri)} (${erro.message}). ` +
         'Verifique se ele está em execução e se MONGODB_URI está correta.',
       { cause: erro },
     )

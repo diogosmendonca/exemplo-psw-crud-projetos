@@ -4,16 +4,17 @@ API REST do Gerenciador de Projetos, feita com Node.js e
 [Express](https://expressjs.com/) 5.
 
 > **Situação:** o CRUD de `/api/projetos` está completo (listar, buscar, criar, alterar
-> e excluir) e os dados são gravados no MongoDB. Veja [Rotas](#rotas) e
-> [MongoDB](#mongodb). Em produção também serve o front-end
+> e excluir) e os dados são gravados no **MongoDB ou no PostgreSQL**, à escolha na
+> configuração. Veja [Rotas](#rotas) e [Bancos de dados](#bancos-de-dados). Em produção também serve o front-end
 > compilado (veja [Servindo o front-end compilado](#servindo-o-front-end-compilado-produção)).
 
 ## Pré-requisitos
 
 - [Node.js](https://nodejs.org/) 20.12 ou superior (recomendado 22.12+, igual ao front-end).
 
-- [MongoDB](https://www.mongodb.com/) acessível pela `MONGODB_URI`. A API **não sobe
-  sem ele**. O jeito mais simples é um container (veja [MongoDB](#mongodb)).
+- Um banco de dados: [MongoDB](https://www.mongodb.com/) (padrão) ou
+  [PostgreSQL](https://www.postgresql.org/). A API **não sobe sem ele**. O jeito mais
+  simples é um container Docker (veja [Bancos de dados](#bancos-de-dados)).
 
 ## Instalação e execução
 
@@ -32,8 +33,11 @@ prefixo `/api` (veja [Rotas](#rotas)).
 | --- | --- |
 | `npm run dev` | Inicia a API e reinicia sozinha quando um arquivo muda. |
 | `npm start` | Inicia a API (uso em produção). |
-| `npm run mongo:popular` | Importa projetos de um JSON para o MongoDB (padrão: os exemplos). Só importa se a coleção estiver vazia. |
-| `npm run mongo:testar` | Testa a conexão com o MongoDB (conecta, faz ping e mostra a versão). |
+| `npm run banco:popular` | Importa projetos de um JSON para o banco escolhido (padrão: os exemplos). Só importa se não houver projetos. |
+| `npm run banco:testar` | Testa a conexão com o banco escolhido (conecta e mostra a versão). |
+| `npm run prisma:migrar` | Cria ou atualiza as tabelas do PostgreSQL (aplica as migrações pendentes). |
+| `npm run prisma:nova-migracao -- --name nome` | Cria uma migração a partir das mudanças em `prisma/schema.prisma` (desenvolvimento). |
+| `npm run prisma:gerar` | Gera o cliente do Prisma. Roda sozinho no `npm install`. |
 | `npm run lint` | Executa o oxlint. |
 
 ## Rotas
@@ -52,6 +56,9 @@ prefixo `/api` (veja [Rotas](#rotas)).
 ```bash
 curl http://localhost:3001/api/projetos
 ```
+
+Os ids dos exemplos são do MongoDB. No PostgreSQL eles são números sequenciais, mas
+também chegam como texto (`"id": "1"`), então o front-end não muda.
 
 ```json
 [
@@ -100,7 +107,7 @@ Corpo da requisição (JSON):
 | `tecnologias` | Não | Lista de textos. Padrão: `[]`. |
 | `url` | Não | URL válida ou vazia. Padrão: `""`. |
 
-O `id` é gerado pelo MongoDB. Um `id` enviado no corpo e
+O `id` é gerado pelo banco. Um `id` enviado no corpo e
 campos desconhecidos são ignorados.
 
 ```bash
@@ -166,8 +173,8 @@ curl -i -X DELETE http://localhost:3001/api/projetos/6aceb46b5086adf91b732127
 | `204` | Projeto excluído. A resposta não tem corpo. |
 | `404` | Não existe projeto com esse `id` (inclusive um id fora do formato): `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
 
-O id de um projeto excluído **não é reaproveitado**: o MongoDB gera ids únicos, então
-um link antigo nunca aponta para outro projeto.
+O id de um projeto excluído **não é reaproveitado** (nem no MongoDB, nem na sequência
+do PostgreSQL), então um link antigo nunca aponta para outro projeto.
 
 ## Clientes
 
@@ -194,16 +201,56 @@ com um nome novo.
 - Um cliente que ficou sem projetos **continua cadastrado** (continua sendo sugerido).
   Não há rota para excluí-lo ou renomeá-lo.
 
-## MongoDB
+## Bancos de dados
 
-Os projetos são gravados no MongoDB, na coleção `projetos`, com o
-[Mongoose](https://mongoosejs.com/):
+A API grava os dados no **MongoDB** (com o [Mongoose](https://mongoosejs.com/)) ou no
+**PostgreSQL** (com o [Prisma](https://www.prisma.io/)). A escolha é feita no `.env`,
+e vale do início ao fim da execução:
 
-- `src/banco/conexao.js` conecta ao banco ao iniciar a API;
-- `src/modelos/projeto.js` define o schema (veja [Schema do projeto](#schema-do-projeto));
-- `src/repositorio/projetos.js` faz as consultas. As rotas só falam com ele.
+```bash
+BANCO=postgres    # ou mongodb (o padrão)
+POSTGRES_URL=postgresql://psw:psw@localhost:5432/gerenciador_projetos
+MONGODB_URI=mongodb://localhost:27017/gerenciador-projetos
+```
 
-### Subir um MongoDB com Docker
+Só a string de conexão do banco escolhido é usada. O log de início mostra qual está
+em uso (sem a senha): `Banco: PostgreSQL em postgresql://***@localhost:5432/gerenciador_projetos`.
+Os dois bancos não se sincronizam: cada um tem os seus projetos.
+
+### Padrão DAO
+
+As rotas não sabem em que banco estão os dados. Elas recebem dois objetos, um
+**DAO** (*Data Access Object*) de projetos e um de clientes, e só chamam os métodos
+do contrato:
+
+| Contrato | Métodos |
+| --- | --- |
+| `ProjetoDAO` (`src/dao/ProjetoDAO.js`) | `listar()`, `buscarPorId(id)`, `criar(dados)`, `alterar(id, dados)`, `excluir(id)` |
+| `ClienteDAO` (`src/dao/ClienteDAO.js`) | `listar()`, `obterOuCriar(nome)` |
+
+Cada banco tem uma classe que estende o contrato: `ProjetoDAOMongo` e
+`ClienteDAOMongo` em `src/dao/mongo/`, `ProjetoDAOPostgres` e `ClienteDAOPostgres` em
+`src/dao/postgres/`. Todas devolvem os dados **no formato da API** (`id` em texto,
+`cliente` como `{ id, nome }` ou `null`), então a resposta é a mesma com qualquer banco.
+
+Quem escolhe a implementação é a fábrica `criarFonteDeDados()` (`src/dao/index.js`),
+chamada uma vez pelo `servidor.js`:
+
+```js
+const fonteDeDados = await criarFonteDeDados() // lê BANCO do .env
+await fonteDeDados.conectar()
+const app = criarApp(fonteDeDados)             // { projetos, clientes, ... }
+```
+
+Ela carrega só o módulo do banco escolhido (rodando com MongoDB, o Prisma nem é
+carregado) e recusa um `BANCO` desconhecido:
+`BANCO inválido: "oracle". Use um destes valores: mongodb, postgres.`
+
+Para acrescentar outro banco: criar uma pasta em `src/dao/` com as duas classes e um
+`index.js` que exporta `criarFonteDeDados`, e registrá-la em `BANCOS`, no
+`src/dao/index.js`. Rotas, validação e front-end não mudam.
+
+### MongoDB
 
 ```bash
 docker run -d --name mongodb-psw \
@@ -216,89 +263,124 @@ Publicar a porta em `127.0.0.1` mantém o banco acessível só pela sua máquina
 container não tem usuário e senha: serve para desenvolvimento, não para servidor.
 Depois de reiniciar o computador, use `docker start mongodb-psw`.
 
+As coleções são criadas sozinhas. O projeto fica em `projetos` e o cliente em
+`cliente` (modelos em `src/dao/mongo/modelos/`). O projeto guarda o `_id` do cliente
+(`ref: 'Cliente'`) e o DAO usa `populate('cliente')` para devolver `{ id, nome }`. O
+`nome` do cliente tem um **índice único que ignora maiúsculas**, criado ao conectar.
+
+**`id` da API × `_id` do MongoDB.** A API fala em `id` (texto); o banco guarda `_id`
+(`ObjectId`). A conversão fica no DAO: na leitura, `_id` vira `id` (texto de 24
+caracteres hexadecimais); um id da URL fora desse formato é tratado como projeto
+inexistente (404), em vez de virar `CastError` (erro 500).
+
+### PostgreSQL
+
+```bash
+docker run -d --name postgres-psw \
+  -p 127.0.0.1:5432:5432 \
+  -e POSTGRES_USER=psw -e POSTGRES_PASSWORD=psw -e POSTGRES_DB=gerenciador_projetos \
+  -v postgres-psw-dados:/var/lib/postgresql \
+  postgres:18
+```
+
+Esses usuário, senha e banco são os do padrão de `POSTGRES_URL`. Como no MongoDB, a
+porta só fica acessível pela sua máquina e, depois de reiniciar o computador, basta
+`docker start postgres-psw`. Para abrir o terminal do banco:
+`docker exec -it postgres-psw psql -U psw gerenciador_projetos`.
+
+Ao contrário do MongoDB, o PostgreSQL precisa das **tabelas criadas antes do
+primeiro uso**:
+
+```bash
+npm run prisma:migrar
+```
+
+Sem isso a API não sobe e avisa: `O PostgreSQL está acessível, mas as tabelas não
+existem. Crie-as com "npm run prisma:migrar" (na pasta backend).`
+
+**Schema e migrações.** As tabelas são descritas em `prisma/schema.prisma`:
+
+| Tabela | Colunas |
+| --- | --- |
+| `projetos` | `id` (sequencial), `nome`, `status` (enum `status_projeto`: `ativo`/`inativo`), `descricao`, `tecnologias` (`text[]`), `url`, `cliente_id` (chave estrangeira, `ON DELETE SET NULL`) |
+| `cliente` | `id` (sequencial), `nome`, `nome_chave` (nome em minúsculas, **único**) |
+
+O SQL que cria essas tabelas fica em `prisma/migrations/`, gerado pelo Prisma e
+versionado no Git. Para mudar o schema: edite `prisma/schema.prisma` e rode
+`npm run prisma:nova-migracao -- --name descricao-da-mudanca`, que cria a migração,
+aplica no seu banco e regenera o cliente. Em outro ambiente, `npm run prisma:migrar`
+aplica as migrações que faltam.
+
+A conexão é configurada em `prisma.config.js` (lê a mesma `POSTGRES_URL`). A API usa o
+`PrismaClient` com o adaptador `@prisma/adapter-pg`, que fala com o banco pelo driver
+`pg` (`src/dao/postgres/conexao.js`).
+
+**Clientes sem diferenciar maiúsculas.** O DAO grava o nome como digitado em `nome` e
+em minúsculas em `nome_chave`. Buscar ou criar é um `upsert` pela chave: um único
+`INSERT ... ON CONFLICT`, que não duplica o cliente mesmo com dois pedidos ao mesmo
+tempo. A lista de clientes é ordenada por `nome_chave`.
+
+**`id` da API × `id` do PostgreSQL.** No banco o `id` é um inteiro; na API, texto
+(`"7"`). Um id da URL que não seja um inteiro positivo (`abc`, `0`, maior que
+2147483647) é tratado como projeto inexistente (404).
+
 ### Dados iniciais
 
 O banco começa **vazio**. Para carregar os três projetos de exemplo, com seus dois
-clientes (`dados/projetos.exemplo.json`):
+clientes (`dados/projetos.exemplo.json`), no banco escolhido em `BANCO`:
 
 ```bash
-npm run mongo:popular
+npm run banco:popular
 ```
 
-O comando só importa se a coleção estiver vazia, então rodá-lo de novo não duplica
+O comando só importa se não houver nenhum projeto, então rodá-lo de novo não duplica
 nada. Para importar outro arquivo, passe o caminho. Serve também para trazer os
 projetos de uma versão antiga, que gravava em `dados/projetos.json`:
 
 ```bash
-npm run mongo:popular -- dados/projetos.json
+npm run banco:popular -- dados/projetos.json
 ```
 
 O arquivo pode ser `{ "projetos": [...] }` ou uma lista. Os `id` dele são descartados
-(o MongoDB gera os seus) e cada projeto passa pela mesma validação da API.
+(o banco gera os seus) e cada projeto passa pela mesma validação da API.
 
-Para zerar o banco, apague a coleção e rode o comando de novo:
+Para zerar o banco, apague os dados e rode o comando de novo:
 
 ```bash
+# MongoDB
 docker exec mongodb-psw mongosh gerenciador-projetos --eval "db.projetos.drop(); db.cliente.drop()"
-npm run mongo:popular
+# PostgreSQL
+docker exec postgres-psw psql -U psw gerenciador_projetos -c "TRUNCATE projetos, cliente RESTART IDENTITY"
+
+npm run banco:popular
 ```
 
 ### Testar a conexão
 
 ```bash
-npm run mongo:testar
+npm run banco:testar
 ```
 
 ```text
-✔ Conectado ao MongoDB 8.3.11 em localhost:27017
-  Banco: gerenciador-projetos | ping: ok
+✔ Conectado ao PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2)
+  Endereço: postgresql://***@localhost:5432/gerenciador_projetos
 ```
 
-Se falhar, mostra o motivo, sai com código `1` e não expõe a senha da `MONGODB_URI`:
+Se falhar, mostra o motivo, sai com código `1` e não expõe a senha:
 
 ```text
-✘ Não foi possível conectar ao MongoDB em mongodb://localhost:27999/x (connect ECONNREFUSED ...). Verifique se ele está em execução e se MONGODB_URI está correta.
+✘ Não foi possível conectar ao PostgreSQL em postgresql://***@localhost:5432/gerenciador_projetos (ECONNREFUSED). Verifique se ele está em execução e se POSTGRES_URL está correta.
 ```
 
 ### Como a conexão se comporta
 
 - **Ao iniciar:** a API espera o banco responder por até 5 segundos. Se não
-  responder, **não sobe** e explica o problema.
-- **Banco cai com a API no ar:** o log avisa `MongoDB: desconectado inesperadamente.`
-  e as rotas de projetos respondem `500` (depois de até 5 segundos de espera) enquanto
-  ele estiver fora. O Mongoose reconecta sozinho quando ele volta
-  (`MongoDB: reconectado.`) e a API volta a funcionar sem reiniciar.
+  responder (ou, no PostgreSQL, se as tabelas não existirem), **não sobe** e explica
+  o problema.
+- **Banco cai com a API no ar:** as rotas de projetos respondem `500` enquanto ele
+  estiver fora e voltam a funcionar sozinhas quando ele volta, sem reiniciar a API.
+  No MongoDB o log avisa `MongoDB: desconectado inesperadamente.` e `MongoDB: reconectado.`
 - **Ao encerrar** (`Ctrl+C` ou `SIGTERM`): a conexão é fechada antes de o processo sair.
-
-### Schemas
-
-O modelo `Projeto` (`src/modelos/projeto.js`) usa a coleção `projetos` e tem os mesmos
-campos da API: `nome` e `status` (`ativo` ou `inativo`) obrigatórios, e `cliente`,
-`descricao`, `tecnologias` e `url` opcionais.
-
-O modelo `Cliente` (`src/modelos/cliente.js`) usa a coleção `cliente` e tem só o `nome`.
-O projeto guarda o `_id` do cliente (uma referência, `ref: 'Cliente'`) e o repositório
-usa `populate('cliente')` para devolver `{ id, nome }`. O `nome` tem um **índice único
-que ignora maiúsculas**, criado ao iniciar a API: ele garante que dois projetos salvos
-ao mesmo tempo com o mesmo cliente novo não criem dois clientes. Espaços nas pontas de `nome` e `url` são removidos.
-É usado por `src/repositorio/projetos.js`.
-
-**`id` da API × `_id` do MongoDB.** A API fala em `id` (texto); o banco guarda `_id`
-(`ObjectId`). A conversão fica toda no modelo:
-
-| Sentido | Como | Resultado |
-| --- | --- | --- |
-| Banco → API | `JSON.stringify(doc)` / `resposta.json(doc)` | `_id` vira `id` (texto de 24 caracteres hexadecimais), e o `__v` some |
-| API → banco | `Projeto.paraDocumento({ id, ...dados })` | `id` vira `_id`; sem `id`, o MongoDB gera o `_id` |
-| Id vindo da URL | `idValido(id)` antes do `findById` | id fora do formato dá 404, e não `CastError` (erro 500) |
-
-```json
-{ "id": "6aceb46b5086adf91b732126", "nome": "Portal do Aluno", "status": "ativo", "descricao": "", "tecnologias": ["React"], "url": "" }
-```
-
-O repositório trata um id fora do formato como projeto inexistente: `GET /api/projetos/1`
-responde `404`, como qualquer id que não existe. Os ids numéricos da versão antiga
-(1, 2, 3...) deixaram de valer: ao importar os dados, cada projeto ganha um id novo.
 
 ## Servindo o front-end compilado (produção)
 
@@ -324,7 +406,9 @@ Variáveis lidas do ambiente ou do arquivo `.env` (modelo em `.env.example`):
 | `PORT` | `3001` | Porta da API (e da aplicação, quando o front-end compilado é servido). Não é `3000` para não colidir com o json-server do front-end enquanto os dois coexistirem. |
 | `NODE_ENV` | (vazio) | Use `production` ao implantar: desliga o CORS padrão e ativa o modo de produção do Express. |
 | `CORS_ORIGIN` | `http://localhost:5173` em desenvolvimento; **nenhum** em produção | Endereço de outro site autorizado a chamar a API. Se definida, vale em qualquer modo. Em produção, com o front-end servido pela API, não é necessária. |
-| `MONGODB_URI` | `mongodb://localhost:27017/gerenciador-projetos` | Endereço do MongoDB onde os projetos são gravados, no formato `mongodb://[usuário:senha@]host:porta/banco`. |
+| `BANCO` | `mongodb` | Banco onde os projetos são gravados: `mongodb` ou `postgres`. Veja [Bancos de dados](#bancos-de-dados). |
+| `MONGODB_URI` | `mongodb://localhost:27017/gerenciador-projetos` | Endereço do MongoDB, no formato `mongodb://[usuário:senha@]host:porta/banco`. Usada com `BANCO=mongodb`. |
+| `POSTGRES_URL` | `postgresql://psw:psw@localhost:5432/gerenciador_projetos` | Endereço do PostgreSQL, no formato `postgresql://usuário:senha@host:porta/banco`. Usada com `BANCO=postgres` e pelos comandos `prisma:*`. |
 | `PASTA_FRONTEND` | `../frontend/dist` | Pasta com o front-end compilado. Caminho relativo conta a partir da pasta `backend`. |
 
 Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
@@ -333,41 +417,53 @@ Variáveis já definidas no ambiente têm prioridade sobre o `.env`.
 
 ```text
 backend/
+├── prisma/
+│   ├── migrations/                # SQL das tabelas do PostgreSQL (gerado pelo Prisma)
+│   └── schema.prisma              # Tabelas do PostgreSQL
 ├── src/
-│   ├── banco/
-│   │   ├── conexao.js             # Conexão com o MongoDB (Mongoose)
-│   │   ├── popular.js             # Script do `npm run mongo:popular`
-│   │   └── testarConexao.js       # Script do `npm run mongo:testar`
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
+│   ├── dao/
+│   │   ├── mongo/
+│   │   │   ├── modelos/           # Schemas e modelos do Mongoose (projeto e cliente)
+│   │   │   ├── ClienteDAOMongo.js
+│   │   │   ├── ProjetoDAOMongo.js
+│   │   │   ├── conexao.js         # Conexão com o MongoDB
+│   │   │   └── index.js           # Monta os DAOs do MongoDB
+│   │   ├── postgres/
+│   │   │   ├── ClienteDAOPostgres.js
+│   │   │   ├── ProjetoDAOPostgres.js
+│   │   │   ├── conexao.js         # PrismaClient e conexão com o PostgreSQL
+│   │   │   └── index.js           # Monta os DAOs do PostgreSQL
+│   │   ├── ClienteDAO.js          # Contrato do DAO de clientes
+│   │   ├── ProjetoDAO.js          # Contrato do DAO de projetos
+│   │   ├── enderecoSemSenha.js    # Esconde a senha das strings de conexão nos logs
+│   │   └── index.js               # Fábrica: escolhe o banco pela variável BANCO
 │   ├── middlewares/
 │   │   ├── frontendEstatico.js    # Serve frontend/dist e devolve index.html nas telas do React
 │   │   ├── naoEncontrado.js       # 404 em JSON
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
-│   ├── modelos/
-│   │   ├── cliente.js             # Schema e modelo do cliente (Mongoose)
-│   │   ├── paraApi.js             # Conversão de _id para id nas respostas
-│   │   └── projeto.js             # Schema e modelo do projeto (Mongoose)
-│   ├── repositorio/
-│   │   ├── clientes.js            # Consultas dos clientes (lista e "obter ou criar")
-│   │   └── projetos.js            # Consultas dos projetos no MongoDB
 │   ├── rotas/
 │   │   ├── clientes.js            # Rota de /api/clientes
 │   │   └── projetos.js            # Rotas de /api/projetos
+│   ├── scripts/
+│   │   ├── popular.js             # Script do `npm run banco:popular`
+│   │   └── testarConexao.js       # Script do `npm run banco:testar`
 │   ├── validacoes/
 │   │   └── projeto.js             # Valida o corpo de um projeto com o schemaProjeto compartilhado
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
-│   └── servidor.js                # Sobe o servidor na porta configurada
+│   └── servidor.js                # Escolhe o banco, conecta e sobe o servidor
 ├── dados/
-│   └── projetos.exemplo.json      # Dados iniciais, importados por `npm run mongo:popular`
+│   └── projetos.exemplo.json      # Dados iniciais, importados por `npm run banco:popular`
 ├── .env.example
+├── prisma.config.js               # Configuração da CLI do Prisma (schema, migrações e conexão)
 └── package.json
 ```
 
-- As rotas não conhecem o banco: falam só com o `repositorio/`. Foi por isso que trocar
-  o arquivo JSON pelo MongoDB mexeu quase só nele.
+- As rotas não conhecem o banco: recebem os DAOs prontos (`criarRotasProjetos(projetos)`).
+  Por isso o mesmo código de rotas atende o MongoDB e o PostgreSQL.
 - `app.js` só **monta** a aplicação e `servidor.js` só **sobe** o servidor. Essa
-  separação permite testar a API sem abrir uma porta.
+  separação permite testar a API sem abrir uma porta (passando DAOs de teste a `criarApp`).
 - Cada recurso tem seu arquivo em `rotas/`, registrado em `app.js` antes de `naoEncontrado`.
 
 ## Formato de erro

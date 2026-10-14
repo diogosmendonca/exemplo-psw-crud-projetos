@@ -1,25 +1,26 @@
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { ambiente } from '../config/ambiente.js'
-import { conectarMongo, desconectarMongo } from './conexao.js'
-import { Projeto } from '../modelos/projeto.js'
-import { criarProjeto } from '../repositorio/projetos.js'
+import { criarFonteDeDados } from '../dao/index.js'
 import { validarProjeto } from '../validacoes/projeto.js'
 
 /**
- * Importa projetos de um arquivo JSON para o MongoDB (`npm run mongo:popular`).
+ * Importa projetos de um arquivo JSON para o banco escolhido em BANCO
+ * (`npm run banco:popular`).
  *
  * Sem argumento usa `dados/projetos.exemplo.json`. Para importar outro arquivo:
- * `npm run mongo:popular -- dados/projetos.json`. Aceita `{ "projetos": [...] }`
- * ou uma lista direta. Os `id` do arquivo são descartados: o MongoDB gera os seus.
+ * `npm run banco:popular -- dados/projetos.json`. Aceita `{ "projetos": [...] }`
+ * ou uma lista direta. Os `id` do arquivo são descartados: o banco gera os seus.
  *
- * Só importa se a coleção estiver vazia, então rodar duas vezes não duplica nada.
+ * Só importa se não houver nenhum projeto, então rodar duas vezes não duplica nada.
  */
 
 const arquivo = path.resolve(
   ambiente.raizDoBackend,
   process.argv[2] ?? 'dados/projetos.exemplo.json',
 )
+
+let fonteDeDados
 
 try {
   const dados = JSON.parse(await readFile(arquivo, 'utf-8'))
@@ -35,19 +36,23 @@ try {
     return projeto
   })
 
-  await conectarMongo()
+  fonteDeDados = await criarFonteDeDados()
+  await fonteDeDados.conectar()
 
-  const existentes = await Projeto.countDocuments()
+  const existentes = (await fonteDeDados.projetos.listar()).length
   if (existentes > 0) {
-    console.log(`A coleção já tem ${existentes} projeto(s): nada foi importado.`)
+    console.log(`O ${fonteDeDados.nome} já tem ${existentes} projeto(s): nada foi importado.`)
   } else {
     // Um a um: cada projeto cria o seu cliente, se for novo.
-    for (const projeto of projetos) await criarProjeto(projeto)
-    console.log(`✔ ${projetos.length} projeto(s) importado(s) de ${path.relative(process.cwd(), arquivo)}.`)
+    for (const projeto of projetos) await fonteDeDados.projetos.criar(projeto)
+    console.log(
+      `✔ ${projetos.length} projeto(s) importado(s) para o ${fonteDeDados.nome} ` +
+        `de ${path.relative(process.cwd(), arquivo)}.`,
+    )
   }
 } catch (erro) {
   console.error(`✘ ${erro.message}`)
   process.exitCode = 1
 } finally {
-  await desconectarMongo()
+  await fonteDeDados?.desconectar()
 }

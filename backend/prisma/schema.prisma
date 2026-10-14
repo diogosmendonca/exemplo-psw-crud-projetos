@@ -1,0 +1,47 @@
+// Schema do PostgreSQL, usado quando BANCO=postgres. O endereço do banco vem
+// de POSTGRES_URL (veja prisma.config.js); ele não fica aqui no Prisma 7.
+//
+// Depois de alterar este arquivo:
+//   npm run prisma:nova-migracao -- --name descricao-da-mudanca
+
+generator client {
+  // Gera o cliente em JavaScript. O gerador novo ("prisma-client") gera
+  // TypeScript, que precisaria de um passo de compilação para rodar no Node.
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum StatusProjeto {
+  ativo
+  inativo
+
+  @@map("status_projeto")
+}
+
+model Cliente {
+  id        Int       @id @default(autoincrement())
+  nome      String    @db.VarChar(100)
+  // Nome em minúsculas, único: "Acme" e "ACME" são o mesmo cliente (o mesmo
+  // papel do índice com collation no MongoDB).
+  nomeChave String    @unique @map("nome_chave") @db.VarChar(100)
+  projetos  Projeto[]
+
+  @@map("cliente")
+}
+
+model Projeto {
+  id          Int           @id @default(autoincrement())
+  nome        String
+  status      StatusProjeto
+  descricao   String        @default("")
+  tecnologias String[]      @default([])
+  url         String        @default("")
+  clienteId   Int?          @map("cliente_id")
+  cliente     Cliente?      @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  @@index([clienteId])
+  @@map("projetos")
+}
