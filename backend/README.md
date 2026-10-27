@@ -182,17 +182,20 @@ do PostgreSQL), então um link antigo nunca aponta para outro projeto.
 O cadastro fica em **Cadastrar usuário** (`/usuarios/novo`). Ainda não há listagem
 nem controle de acesso por perfil, e o projeto ainda não é ligado a um usuário.
 
-A entrada é a tela **Entrar** (`/entrar`). O `POST /api/sessao` manda o nome de
+A entrada é a tela **Entrar** (`/entrar`). O `POST /api/token` manda o nome de
 usuário e a senha **uma vez**; a estratégia local do Passport confere o hash com
-o bcrypt e o `express-session` grava um cookie `sessao` (só com o id da sessão,
-`httpOnly`). As requisições seguintes mandam o cookie, não a senha. Sem sessão,
-a API responde `401` e a aplicação volta para `/entrar`. `DELETE /api/sessao` sai.
+o bcrypt e a API devolve um JWT (o id do usuário no campo `sub`, válido por 8
+horas). As requisições seguintes mandam `Authorization: Bearer`, e a estratégia
+JWT confere a assinatura. O servidor não guarda o token. Sem ele, ou com ele
+vencido, a API responde `401` e a aplicação volta para `/entrar`. Sair apaga o
+token no navegador.
 
 ```bash
-curl -c cookies.txt -X POST http://localhost:3001/api/sessao \
+curl -X POST http://localhost:3001/api/token \
   -H "Content-Type: application/json" \
   -d '{"nomeUsuario":"ana","senha":"segredo123"}'
-curl -b cookies.txt http://localhost:3001/api/projetos
+curl http://localhost:3001/api/projetos \
+  -H "Authorization: Bearer TOKEN_DEVOLVIDO"
 ```
 
 | Campo | Regra |
@@ -460,9 +463,9 @@ backend/
 │   └── schema.prisma              # Tabelas do PostgreSQL
 ├── src/
 │   ├── autenticacao/
-│   │   ├── passport.js            # Estratégias local (login) e de cadastro do Passport
+│   │   ├── passport.js            # Estratégias local (login), JWT e de cadastro
 │   │   ├── senha.js               # Hash bcrypt da senha
-│   │   └── sessao.js              # Cookie de sessão (express-session)
+│   │   └── token.js               # Assina o JWT do login
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
 │   ├── dao/
@@ -491,7 +494,7 @@ backend/
 │   ├── rotas/
 │   │   ├── clientes.js            # Rota de /api/clientes
 │   │   ├── projetos.js            # Rotas de /api/projetos
-│   │   ├── sessao.js              # Entrar, ver a sessão e sair
+│   │   ├── token.js               # Entrar e ler o usuário do JWT
 │   │   └── usuarios.js            # Rota de cadastro em /api/usuarios
 │   ├── scripts/
 │   │   ├── popular.js             # Script do `npm run banco:popular`

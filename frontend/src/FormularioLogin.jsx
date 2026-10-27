@@ -3,12 +3,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { schemaLogin } from '@gerenciador-de-projetos/compartilhado'
 import { useForm } from 'react-hook-form'
 import { Navigate } from 'react-router-dom'
-import { entrar } from './api/sessao.js'
+import { entrar } from './api/token.js'
 import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
-import { sessaoQueryKey, useSessao } from './hooks/useSessao.js'
+import { autenticacaoQueryKey, useAutenticacao } from './hooks/useAutenticacao.js'
 
 function FormularioLogin() {
-  const { usuario, carregando, erro } = useSessao()
+  const { usuario, carregando, erro } = useAutenticacao()
 
   if (carregando) return <Carregando>Carregando...</Carregando>
   if (erro) return <Alerta>{erro}</Alerta>
@@ -32,7 +32,7 @@ function CamposLogin() {
   const submeter = async (credenciais) => {
     try {
       const usuario = await entrar(credenciais)
-      queryClient.setQueryData(sessaoQueryKey, usuario)
+      queryClient.setQueryData(autenticacaoQueryKey, usuario)
     } catch (erroDaSubmissao) {
       setError('root.serverError', { type: 'server', message: erroDaSubmissao.message })
     }

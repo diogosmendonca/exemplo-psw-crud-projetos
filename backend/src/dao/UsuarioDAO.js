@@ -58,7 +58,7 @@ export class UsuarioDAO {
   }
 
   /**
-   * Usado ao restaurar a sessão (o cookie guarda só o id).
+   * Usado pela estratégia JWT: o token guarda só o id (`sub`).
    *
    * @param {string} id
    * @returns {Promise<Usuario|null>}

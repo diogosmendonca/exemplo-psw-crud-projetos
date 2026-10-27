@@ -38,8 +38,8 @@ export const ambiente = {
   // Endereço do PostgreSQL (formato postgresql://usuário:senha@host:porta/banco).
   postgresUrl:
     process.env.POSTGRES_URL ?? 'postgresql://psw:psw@localhost:5432/gerenciador_projetos',
-  // Assina o cookie da sessão. Troque em produção (SESSION_SECRET no .env).
-  segredoDaSessao: process.env.SESSION_SECRET ?? 'segredo-de-desenvolvimento',
+  // Assina o JWT. Troque em produção (JWT_SECRET no .env).
+  segredoDoJwt: process.env.JWT_SECRET ?? 'segredo-de-desenvolvimento',
   pastaFrontend,
   // Só serve o front-end se ele já foi compilado.
   frontendDisponivel: existsSync(path.join(pastaFrontend, 'index.html')),

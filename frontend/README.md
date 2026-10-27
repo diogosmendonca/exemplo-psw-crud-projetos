@@ -175,7 +175,7 @@ Exemplo de projeto:
 | `/projetos/:id` | Formulário de alteração |
 | `/projetos/:id/excluir` | Listagem com o modal de confirmação de exclusão |
 | `/usuarios/novo` | Cadastro de usuário (Administrador ou Gerente de Projetos) |
-| `/entrar` | Tela de entrada (abre a sessão) |
+| `/entrar` | Tela de entrada (recebe o JWT) |
 
 ### Publicação (produção)
 

@@ -5,8 +5,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // A API fica na mesma origem do front-end, e o cookie da sessão vale
-    // para as chamadas em /api.
+    // A API fica na mesma origem do front-end. O JWT vai no cabeçalho
+    // Authorization das chamadas em /api.
     proxy: {
       '/api': 'http://localhost:3001',
     },

@@ -1,17 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Navigate, Outlet } from 'react-router-dom'
-import { sair } from './api/sessao.js'
+import { sair } from './api/token.js'
 import { Alerta, Carregando } from './design-system'
 import Cabecalho from './Cabecalho.jsx'
-import { useSessao } from './hooks/useSessao.js'
+import { useAutenticacao } from './hooks/useAutenticacao.js'
 
-/** Telas da aplicação. Sem sessão, manda para a entrada. */
+/** Telas da aplicação. Sem JWT válido, manda para a entrada. */
 function LayoutAutenticado() {
   const queryClient = useQueryClient()
-  const { usuario, carregando, erro } = useSessao()
+  const { usuario, carregando, erro } = useAutenticacao()
 
-  const aoSair = async () => {
-    await sair()
+  const aoSair = () => {
+    sair()
     queryClient.clear()
     window.location.assign('/entrar')
   }

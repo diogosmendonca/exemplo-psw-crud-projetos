@@ -1,4 +1,4 @@
-import { pedirAutenticacao } from './autenticacao.js'
+import { comToken, pedirAutenticacao } from './autenticacao.js'
 
 const URL_BASE_API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 const URL_PROJETOS = `${URL_BASE_API}/projetos`
@@ -9,7 +9,7 @@ const URL_PROJETOS = `${URL_BASE_API}/projetos`
  */
 async function conectar(url, opcoes) {
   try {
-    return await fetch(url, { credentials: 'include', ...opcoes })
+    return await fetch(url, comToken(opcoes))
   } catch {
     // Com a URL relativa (produção) o endereço não ajuda; só com a absoluta.
     const destino = URL_BASE_API.startsWith('/') ? 'à API' : `à API em ${URL_BASE_API}`

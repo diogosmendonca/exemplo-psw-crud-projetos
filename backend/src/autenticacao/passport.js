@@ -1,7 +1,10 @@
 import passport from 'passport'
+import { ExtractJwt, Strategy as EstrategiaJwt } from 'passport-jwt'
 import { Strategy as EstrategiaLocal } from 'passport-local'
 import { UsuarioJaCadastrado } from '../dao/UsuarioDAO.js'
+import { ambiente } from '../config/ambiente.js'
 import { conferirSenha, gerarHashDaSenha } from './senha.js'
+import { gerarToken } from './token.js'
 
 const MENSAGEM_LOGIN = 'Usuário ou senha inválidos.'
 
@@ -10,7 +13,7 @@ const MENSAGEM_LOGIN = 'Usuário ou senha inválidos.'
  *
  * O Passport não gera hash: ele organiza o fluxo (recebe nome de usuário e
  * senha, chama este verificador e devolve o usuário ou a falha). O hash é
- * feito aqui com o bcrypt, antes de o DAO gravar. O cadastro não abre sessão.
+ * feito aqui com o bcrypt, antes de o DAO gravar. O cadastro não devolve token.
  *
  * @param {import('../dao/UsuarioDAO.js').UsuarioDAO} usuarios
  */
@@ -63,9 +66,12 @@ export function cadastrar(requisicao, resposta, proximo) {
 }
 
 /**
- * Estratégia local do Passport, usada no login. O nome de usuário e a senha
- * vêm do corpo do `POST /api/sessao` (a tela de entrada), uma única vez. A
- * sessão guarda o id; as requisições seguintes mandam só o cookie.
+ * Duas estratégias do Passport.
+ *
+ * A local só roda no login: confere nome de usuário e senha e, se estiver
+ * certo, a rota assina um JWT. A estratégia JWT protege o resto da API. Ela
+ * lê o token do cabeçalho `Authorization: Bearer` e busca o usuário pelo id
+ * que está no token (`sub`). Não há sessão no servidor.
  *
  * @param {import('../dao/UsuarioDAO.js').UsuarioDAO} usuarios
  */
@@ -91,44 +97,56 @@ export function configurarAutenticacao(usuarios) {
     ),
   )
 
-  // O cookie não leva o usuário inteiro: só o id. A cada requisição o Passport
-  // busca o usuário de novo.
-  passport.serializeUser((usuario, done) => done(null, usuario.id))
-  passport.deserializeUser(async (id, done) => {
-    try {
-      done(null, await usuarios.buscarPorId(id))
-    } catch (erro) {
-      done(erro)
-    }
-  })
+  passport.use(
+    'jwt',
+    new EstrategiaJwt(
+      {
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        secretOrKey: ambiente.segredoDoJwt,
+      },
+      async (payload, done) => {
+        try {
+          const usuario = await usuarios.buscarPorId(payload.sub)
+          done(null, usuario ?? false)
+        } catch (erro) {
+          done(erro)
+        }
+      },
+    ),
+  )
 }
 
 /**
- * Exige uma sessão autenticada. A tela de entrada e o `POST /api/sessao`
- * ficam de fora. O preflight do CORS também passa sem sessão.
+ * Exige um JWT válido. A tela de entrada e o `POST /api/token` ficam de fora.
+ * O preflight do CORS também passa sem token.
  */
 export function autenticar(requisicao, resposta, proximo) {
   if (requisicao.method === 'OPTIONS') return proximo()
-  if (requisicao.isAuthenticated()) return proximo()
 
-  resposta.status(401).json({ mensagem: 'É preciso entrar para acessar.' })
+  passport.authenticate('jwt', { session: false }, (erro, usuario) => {
+    if (erro) return proximo(erro)
+    if (!usuario) {
+      return resposta.status(401).json({ mensagem: 'É preciso entrar para acessar.' })
+    }
+
+    requisicao.user = usuario
+    proximo()
+  })(requisicao, resposta, proximo)
 }
 
 /**
- * Login. O corpo já foi validado. O Passport confere a senha e, se estiver
- * certa, grava o id do usuário na sessão (`req.login`).
+ * Login. O corpo já foi validado. O Passport confere a senha com a estratégia
+ * local e, se estiver certa, devolve o JWT e o usuário. O token não fica
+ * gravado no servidor.
  */
 export function entrar(requisicao, resposta, proximo) {
-  passport.authenticate('local', (erro, usuario, info) => {
+  passport.authenticate('local', { session: false }, (erro, usuario, info) => {
     if (erro) return proximo(erro)
 
     if (!usuario) {
       return resposta.status(401).json({ mensagem: info?.message ?? MENSAGEM_LOGIN })
     }
 
-    requisicao.login(usuario, (erroLogin) => {
-      if (erroLogin) return proximo(erroLogin)
-      resposta.json(usuario)
-    })
+    resposta.json({ token: gerarToken(usuario), usuario })
   })(requisicao, resposta, proximo)
 }

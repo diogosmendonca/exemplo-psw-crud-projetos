@@ -1,4 +1,4 @@
-import { pedirAutenticacao } from './autenticacao.js'
+import { comToken, pedirAutenticacao } from './autenticacao.js'
 
 const URL_BASE_API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 const URL_CLIENTES = `${URL_BASE_API}/clientes`
@@ -14,7 +14,7 @@ const URL_CLIENTES = `${URL_BASE_API}/clientes`
  */
 export async function listarClientes() {
   try {
-    const resposta = await fetch(URL_CLIENTES, { credentials: 'include' })
+    const resposta = await fetch(URL_CLIENTES, comToken())
 
     if (pedirAutenticacao(resposta)) return new Promise(() => {})
 
