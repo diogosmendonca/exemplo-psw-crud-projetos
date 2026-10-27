@@ -1,3 +1,5 @@
+import { pedirAutenticacao } from './autenticacao.js'
+
 const URL_BASE_API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 const URL_PROJETOS = `${URL_BASE_API}/projetos`
 
@@ -18,6 +20,8 @@ async function conectar(url, opcoes) {
 /** Faz a requisição e falha com `mensagemDeFalha` para respostas 4xx/5xx. */
 async function requisitar(url, opcoes, mensagemDeFalha) {
   const resposta = await conectar(url, opcoes)
+
+  if (pedirAutenticacao(resposta)) return new Promise(() => {})
 
   if (!resposta.ok) {
     throw new Error(`${mensagemDeFalha} (${resposta.status}).`)
@@ -44,6 +48,7 @@ export async function buscarProjeto(id) {
   const resposta = await conectar(`${URL_PROJETOS}/${id}`)
 
   if (resposta.status === 404) return null
+  if (pedirAutenticacao(resposta)) return new Promise(() => {})
   if (!resposta.ok) {
     throw new Error(`Não foi possível carregar o projeto (${resposta.status}).`)
   }

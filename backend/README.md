@@ -50,6 +50,7 @@ prefixo `/api` (veja [Rotas](#rotas)).
 | `PUT` | `/api/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
 | `DELETE` | `/api/projetos/:id` | Exclui o projeto. Responde `204`, sem corpo. |
 | `GET` | `/api/clientes` | Lista os clientes já cadastrados, em ordem alfabética. Veja [Clientes](#clientes). |
+| `POST` | `/api/usuarios` | Cadastra um usuário. Responde `201` sem a senha, `400` se os dados forem inválidos e `409` se o e-mail ou o nome de usuário já existir. Veja [Usuários](#usuários). |
 
 ### GET /api/projetos
 
@@ -175,6 +176,39 @@ curl -i -X DELETE http://localhost:3001/api/projetos/6aceb46b5086adf91b732127
 
 O id de um projeto excluído **não é reaproveitado** (nem no MongoDB, nem na sequência
 do PostgreSQL), então um link antigo nunca aponta para outro projeto.
+
+## Usuários
+
+O cadastro fica em **Cadastrar usuário** (`/usuarios/novo`). Ainda não há listagem
+nem controle de acesso por perfil, e o projeto ainda não é ligado a um usuário.
+Toda a aplicação pede **Basic Auth**: o navegador abre o prompt nativo (não há
+tela de login). O Passport confere o nome de usuário e a senha com o bcrypt.
+
+```bash
+curl -i -u ana:segredo123 http://localhost:3001/api/projetos
+```
+
+Sem o cabeçalho `Authorization` (ou com senha errada), a resposta é `401` e traz
+`WWW-Authenticate: Basic realm="Gerenciador de Projetos"`.
+
+| Campo | Regra |
+| --- | --- |
+| `nome` | Obrigatório. Até 100 caracteres. |
+| `email` | Obrigatório e único. Gravado em minúsculas. |
+| `nomeUsuario` | Obrigatório, único e sem espaços. De 3 a 50 caracteres. `Ana` e `ana` são o mesmo usuário. |
+| `senha` | De 8 a 72 caracteres. Não volta na resposta. |
+| `perfil` | `administrador` (Administrador) ou `gerente` (Gerente de Projetos). |
+
+A rota valida o corpo com o `schemaUsuario` do pacote compartilhado (o mesmo do
+formulário) e entrega o cadastro à estratégia `cadastro` do Passport. O Passport não
+gera o hash: a estratégia usa o bcrypt e o DAO grava só o resultado. A resposta é
+`{ id, nome, email, nomeUsuario, perfil }`.
+
+```bash
+curl -i -X POST http://localhost:3001/api/usuarios \
+  -H "Content-Type: application/json" \
+  -d '{"nome":"Ana","email":"ana@exemplo.com","nomeUsuario":"ana","senha":"segredo123","perfil":"gerente"}'
+```
 
 ## Clientes
 
@@ -421,22 +455,28 @@ backend/
 │   ├── migrations/                # SQL das tabelas do PostgreSQL (gerado pelo Prisma)
 │   └── schema.prisma              # Tabelas do PostgreSQL
 ├── src/
+│   ├── autenticacao/
+│   │   ├── passport.js            # Estratégias de cadastro e Basic Auth do Passport
+│   │   └── senha.js               # Hash bcrypt da senha
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
 │   ├── dao/
 │   │   ├── mongo/
-│   │   │   ├── modelos/           # Schemas e modelos do Mongoose (projeto e cliente)
+│   │   │   ├── modelos/           # Schemas e modelos do Mongoose (projeto, cliente e usuário)
 │   │   │   ├── ClienteDAOMongo.js
 │   │   │   ├── ProjetoDAOMongo.js
+│   │   │   ├── UsuarioDAOMongo.js
 │   │   │   ├── conexao.js         # Conexão com o MongoDB
 │   │   │   └── index.js           # Monta os DAOs do MongoDB
 │   │   ├── postgres/
 │   │   │   ├── ClienteDAOPostgres.js
 │   │   │   ├── ProjetoDAOPostgres.js
+│   │   │   ├── UsuarioDAOPostgres.js
 │   │   │   ├── conexao.js         # PrismaClient e conexão com o PostgreSQL
 │   │   │   └── index.js           # Monta os DAOs do PostgreSQL
 │   │   ├── ClienteDAO.js          # Contrato do DAO de clientes
 │   │   ├── ProjetoDAO.js          # Contrato do DAO de projetos
+│   │   ├── UsuarioDAO.js          # Contrato do DAO de usuários
 │   │   ├── enderecoSemSenha.js    # Esconde a senha das strings de conexão nos logs
 │   │   └── index.js               # Fábrica: escolhe o banco pela variável BANCO
 │   ├── middlewares/
@@ -445,12 +485,14 @@ backend/
 │   │   └── tratadorDeErros.js     # Erros em JSON (400 para JSON inválido, 500 genérico)
 │   ├── rotas/
 │   │   ├── clientes.js            # Rota de /api/clientes
-│   │   └── projetos.js            # Rotas de /api/projetos
+│   │   ├── projetos.js            # Rotas de /api/projetos
+│   │   └── usuarios.js            # Rota de cadastro em /api/usuarios
 │   ├── scripts/
 │   │   ├── popular.js             # Script do `npm run banco:popular`
 │   │   └── testarConexao.js       # Script do `npm run banco:testar`
 │   ├── validacoes/
-│   │   └── projeto.js             # Valida o corpo de um projeto com o schemaProjeto compartilhado
+│   │   ├── projeto.js             # Valida o corpo de um projeto com o schemaProjeto compartilhado
+│   │   └── usuario.js             # Valida o corpo do cadastro com o schemaUsuario compartilhado
 │   ├── app.js                     # Monta o Express (middlewares e rotas)
 │   └── servidor.js                # Escolhe o banco, conecta e sobe o servidor
 ├── dados/

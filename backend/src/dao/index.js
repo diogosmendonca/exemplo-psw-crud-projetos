@@ -9,6 +9,7 @@ import { ambiente } from '../config/ambiente.js'
  * @property {() => Promise<string>} versao Versão do servidor do banco.
  * @property {import('./ProjetoDAO.js').ProjetoDAO} projetos
  * @property {import('./ClienteDAO.js').ClienteDAO} clientes
+ * @property {import('./UsuarioDAO.js').UsuarioDAO} usuarios
  */
 
 // Cada banco fica em um módulo carregado só quando escolhido: rodar com MongoDB

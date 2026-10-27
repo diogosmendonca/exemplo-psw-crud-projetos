@@ -3,6 +3,7 @@ import AvisoProvider from './aviso/AvisoProvider.jsx'
 import Cabecalho from './Cabecalho.jsx'
 import Lista from './Lista.jsx'
 import FormularioProjeto from './FormularioProjeto.jsx'
+import FormularioUsuario from './FormularioUsuario.jsx'
 import ConfirmacaoExclusao from './ConfirmacaoExclusao.jsx'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           </Route>
           <Route path="/projetos/novo" element={<FormularioProjeto />} />
           <Route path="/projetos/:id" element={<FormularioProjeto />} />
+          <Route path="/usuarios/novo" element={<FormularioUsuario />} />
           <Route path="*" element={<Navigate to="/projetos" replace />} />
         </Routes>
       </main>

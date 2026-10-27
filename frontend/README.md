@@ -174,6 +174,7 @@ Exemplo de projeto:
 | `/projetos/novo` | Formulário de novo projeto |
 | `/projetos/:id` | Formulário de alteração |
 | `/projetos/:id/excluir` | Listagem com o modal de confirmação de exclusão |
+| `/usuarios/novo` | Cadastro de usuário (Administrador ou Gerente de Projetos) |
 
 ### Publicação (produção)
 

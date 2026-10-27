@@ -4,6 +4,7 @@ import { enderecoSemSenha } from '../enderecoSemSenha.js'
 import { ClienteDAOMongo } from './ClienteDAOMongo.js'
 import { conectarMongo, desconectarMongo } from './conexao.js'
 import { ProjetoDAOMongo } from './ProjetoDAOMongo.js'
+import { UsuarioDAOMongo } from './UsuarioDAOMongo.js'
 
 /** @returns {import('../index.js').FonteDeDados} */
 export function criarFonteDeDados() {
@@ -17,5 +18,6 @@ export function criarFonteDeDados() {
     versao: async () => (await mongoose.connection.db.admin().serverInfo()).version,
     projetos: new ProjetoDAOMongo(clientes),
     clientes,
+    usuarios: new UsuarioDAOMongo(),
   }
 }

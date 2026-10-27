@@ -3,6 +3,7 @@ import { enderecoSemSenha } from '../enderecoSemSenha.js'
 import { ClienteDAOPostgres } from './ClienteDAOPostgres.js'
 import { conectarPostgres, desconectarPostgres, prisma } from './conexao.js'
 import { ProjetoDAOPostgres } from './ProjetoDAOPostgres.js'
+import { UsuarioDAOPostgres } from './UsuarioDAOPostgres.js'
 
 /** @returns {import('../index.js').FonteDeDados} */
 export function criarFonteDeDados() {
@@ -16,5 +17,6 @@ export function criarFonteDeDados() {
     versao: async () => (await prisma.$queryRaw`SHOW server_version`)[0].server_version,
     projetos: new ProjetoDAOPostgres(prisma, clientes),
     clientes,
+    usuarios: new UsuarioDAOPostgres(prisma),
   }
 }

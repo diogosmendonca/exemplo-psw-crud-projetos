@@ -3,6 +3,7 @@
 //
 // Depois de alterar este arquivo:
 //   npm run prisma:nova-migracao -- --name descricao-da-mudanca
+//   npm run prisma:gerar
 
 generator client {
   // Gera o cliente em JavaScript. O gerador novo ("prisma-client") gera
@@ -19,6 +20,13 @@ enum StatusProjeto {
   inativo
 
   @@map("status_projeto")
+}
+
+enum PerfilUsuario {
+  administrador
+  gerente
+
+  @@map("perfil_usuario")
 }
 
 model Cliente {
@@ -44,4 +52,21 @@ model Projeto {
 
   @@index([clienteId])
   @@map("projetos")
+}
+
+// Cada projeto será de um único usuário. Essa ligação ainda não existe:
+// por enquanto só o cadastro de usuário está pronto.
+model Usuario {
+  id               Int           @id @default(autoincrement())
+  nome             String        @db.VarChar(100)
+  email            String        @unique @db.VarChar(254)
+  nomeUsuario      String        @map("nome_usuario") @db.VarChar(50)
+  // Nome de usuário em minúsculas, único: "Ana" e "ana" são a mesma pessoa
+  // (o mesmo papel do índice com collation no MongoDB).
+  nomeUsuarioChave String        @unique @map("nome_usuario_chave") @db.VarChar(50)
+  // Hash bcrypt. A senha em texto nunca é gravada nem devolvida.
+  senhaHash        String        @map("senha_hash")
+  perfil           PerfilUsuario
+
+  @@map("usuario")
 }

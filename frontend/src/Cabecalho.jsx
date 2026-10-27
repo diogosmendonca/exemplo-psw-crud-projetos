@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Container, Nav, Navbar } from 'react-bootstrap'
-import { FolderKanban, FolderPlus } from 'lucide-react'
+import { FolderKanban, FolderPlus, UserPlus } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
 // Itens do menu principal. Para adicionar uma página ao menu, inclua um item aqui.
 const ITENS_MENU = [
   { para: '/projetos', rotulo: 'Projetos', Icone: FolderKanban, exato: true },
   { para: '/projetos/novo', rotulo: 'Novo projeto', Icone: FolderPlus, exato: false },
+  { para: '/usuarios/novo', rotulo: 'Cadastrar usuário', Icone: UserPlus, exato: true },
 ]
 
 function Cabecalho() {
