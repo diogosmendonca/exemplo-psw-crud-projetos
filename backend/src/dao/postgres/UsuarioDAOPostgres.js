@@ -61,4 +61,15 @@ export class UsuarioDAOPostgres extends UsuarioDAO {
 
     return { ...paraUsuario(registro), senhaHash: registro.senhaHash }
   }
+
+  async buscarPorId(id) {
+    if (typeof id !== 'string' || !/^\d+$/.test(id)) return null
+
+    const numero = Number(id)
+    if (numero < 1 || numero > 2_147_483_647) return null
+
+    const registro = await this.prisma.usuario.findUnique({ where: { id: numero } })
+
+    return registro ? paraUsuario(registro) : null
+  }
 }

@@ -26,6 +26,18 @@ const mensagemNome = 'Informe o nome.'
 const mensagemNomeDeUsuario = 'Informe o nome de usuário.'
 const mensagemSenha = `A senha deve ter de ${TAMANHO_MINIMO_SENHA} a ${TAMANHO_MAXIMO_SENHA} caracteres.`
 
+/** Nome de usuário e senha da tela de entrada. A senha não tem tamanho mínimo aqui: quem já cadastrou entra com a senha que gravou. */
+export const schemaLogin = z.object(
+  {
+    nomeUsuario: z
+      .string({ error: 'Informe o nome de usuário.' })
+      .trim()
+      .min(1, 'Informe o nome de usuário.'),
+    senha: z.string({ error: 'Informe a senha.' }).min(1, 'Informe a senha.'),
+  },
+  { error: 'O corpo da requisição deve ser um objeto JSON com o nome de usuário e a senha.' },
+)
+
 export const schemaUsuario = z.object(
   {
     nome: z

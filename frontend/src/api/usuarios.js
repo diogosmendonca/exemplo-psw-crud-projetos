@@ -9,7 +9,7 @@ const URL_USUARIOS = `${URL_BASE_API}/usuarios`
  */
 async function conectar(url, opcoes) {
   try {
-    return await fetch(url, opcoes)
+    return await fetch(url, { credentials: 'include', ...opcoes })
   } catch {
     const destino = URL_BASE_API.startsWith('/') ? 'à API' : `à API em ${URL_BASE_API}`
     throw new Error(`Não foi possível conectar ${destino}. Verifique se ela está em execução.`)

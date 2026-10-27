@@ -9,5 +9,6 @@ export {
   ROTULO_PERFIL_USUARIO,
   TAMANHO_MAXIMO_NOME_DE_USUARIO,
   TAMANHO_MAXIMO_NOME_USUARIO,
+  schemaLogin,
   schemaUsuario,
 } from './usuario.js'

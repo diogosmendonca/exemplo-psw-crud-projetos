@@ -5,11 +5,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // A API fica na mesma origem do front-end. Assim, depois que o navegador
-    // aceita o prompt de Basic Auth, ele envia o usuário e a senha no /api.
+    // A API fica na mesma origem do front-end, e o cookie da sessão vale
+    // para as chamadas em /api.
     proxy: {
       '/api': 'http://localhost:3001',
-      '/autenticar': 'http://localhost:3001',
     },
   },
   css: {

@@ -1,13 +1,15 @@
 import cors from 'cors'
 import express from 'express'
 import passport from 'passport'
-import { autenticar, configurarAutenticacao, redirecionarAposAutenticacao } from './autenticacao/passport.js'
+import { autenticar, configurarAutenticacao } from './autenticacao/passport.js'
+import { sessao } from './autenticacao/sessao.js'
 import { ambiente } from './config/ambiente.js'
 import { frontendEstatico } from './middlewares/frontendEstatico.js'
 import { naoEncontrado } from './middlewares/naoEncontrado.js'
 import { tratadorDeErros } from './middlewares/tratadorDeErros.js'
 import { criarRotasClientes } from './rotas/clientes.js'
 import { criarRotasProjetos } from './rotas/projetos.js'
+import { criarRotaDeEntrada, criarRotasSessao } from './rotas/sessao.js'
 import { criarRotasUsuarios } from './rotas/usuarios.js'
 
 /**
@@ -25,18 +27,20 @@ export function criarApp({ projetos, clientes, usuarios }) {
   // Só em desenvolvimento (ou com CORS_ORIGIN definido). Em produção o
   // front-end é servido por esta mesma aplicação e não precisa de CORS.
   if (ambiente.origemPermitida) {
-    app.use(cors({ origin: ambiente.origemPermitida }))
+    app.use(cors({ origin: ambiente.origemPermitida, credentials: true }))
   }
 
   app.use(express.json())
-  // Sem sessão: o Basic Auth manda o usuário e a senha em toda requisição.
+  // A sessão vem antes do Passport: é ela que lê o cookie e o restaura.
+  app.use(sessao())
   app.use(passport.initialize())
+  app.use(passport.session())
   configurarAutenticacao(usuarios)
-  app.use(autenticar)
 
-  // A tela não tem formulário de login. Esta rota, pedida pelo navegador,
-  // devolve 401 e o prompt nativo; autenticado, volta para a aplicação.
-  app.get('/autenticar', redirecionarAposAutenticacao)
+  // Login, antes da exigência de sessão. O restante de /api exige estar dentro.
+  app.use('/api/sessao', criarRotaDeEntrada())
+  app.use('/api', autenticar)
+  app.use('/api/sessao', criarRotasSessao())
 
   app.use('/api/projetos', criarRotasProjetos(projetos))
   app.use('/api/clientes', criarRotasClientes(clientes))

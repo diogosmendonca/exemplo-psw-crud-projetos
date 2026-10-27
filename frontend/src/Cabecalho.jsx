@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Container, Nav, Navbar } from 'react-bootstrap'
-import { FolderKanban, FolderPlus, UserPlus } from 'lucide-react'
+import { FolderKanban, FolderPlus, LogOut, UserPlus } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
 // Itens do menu principal. Para adicionar uma página ao menu, inclua um item aqui.
@@ -10,7 +10,7 @@ const ITENS_MENU = [
   { para: '/usuarios/novo', rotulo: 'Cadastrar usuário', Icone: UserPlus, exato: true },
 ]
 
-function Cabecalho() {
+function Cabecalho({ usuario, aoSair }) {
   const navRef = useRef(null)
   const [aberto, setAberto] = useState(false)
   const fecharMenu = () => setAberto(false)
@@ -66,6 +66,18 @@ function Cabecalho() {
                 {rotulo}
               </Nav.Link>
             ))}
+            <Navbar.Text className="ms-lg-3">{usuario.nome}</Navbar.Text>
+            <button
+              type="button"
+              className="btn btn-outline-light ms-lg-3 d-flex align-items-center gap-2"
+              onClick={() => {
+                fecharMenu()
+                aoSair()
+              }}
+            >
+              <LogOut aria-hidden="true" size={18} />
+              Sair
+            </button>
           </Nav>
         </Navbar.Collapse>
       </Container>

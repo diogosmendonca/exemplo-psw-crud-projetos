@@ -181,15 +181,19 @@ do PostgreSQL), então um link antigo nunca aponta para outro projeto.
 
 O cadastro fica em **Cadastrar usuário** (`/usuarios/novo`). Ainda não há listagem
 nem controle de acesso por perfil, e o projeto ainda não é ligado a um usuário.
-Toda a aplicação pede **Basic Auth**: o navegador abre o prompt nativo (não há
-tela de login). O Passport confere o nome de usuário e a senha com o bcrypt.
+
+A entrada é a tela **Entrar** (`/entrar`). O `POST /api/sessao` manda o nome de
+usuário e a senha **uma vez**; a estratégia local do Passport confere o hash com
+o bcrypt e o `express-session` grava um cookie `sessao` (só com o id da sessão,
+`httpOnly`). As requisições seguintes mandam o cookie, não a senha. Sem sessão,
+a API responde `401` e a aplicação volta para `/entrar`. `DELETE /api/sessao` sai.
 
 ```bash
-curl -i -u ana:segredo123 http://localhost:3001/api/projetos
+curl -c cookies.txt -X POST http://localhost:3001/api/sessao \
+  -H "Content-Type: application/json" \
+  -d '{"nomeUsuario":"ana","senha":"segredo123"}'
+curl -b cookies.txt http://localhost:3001/api/projetos
 ```
-
-Sem o cabeçalho `Authorization` (ou com senha errada), a resposta é `401` e traz
-`WWW-Authenticate: Basic realm="Gerenciador de Projetos"`.
 
 | Campo | Regra |
 | --- | --- |
@@ -456,8 +460,9 @@ backend/
 │   └── schema.prisma              # Tabelas do PostgreSQL
 ├── src/
 │   ├── autenticacao/
-│   │   ├── passport.js            # Estratégias de cadastro e Basic Auth do Passport
-│   │   └── senha.js               # Hash bcrypt da senha
+│   │   ├── passport.js            # Estratégias local (login) e de cadastro do Passport
+│   │   ├── senha.js               # Hash bcrypt da senha
+│   │   └── sessao.js              # Cookie de sessão (express-session)
 │   ├── config/
 │   │   └── ambiente.js            # Lê o .env e exporta a configuração
 │   ├── dao/
@@ -486,6 +491,7 @@ backend/
 │   ├── rotas/
 │   │   ├── clientes.js            # Rota de /api/clientes
 │   │   ├── projetos.js            # Rotas de /api/projetos
+│   │   ├── sessao.js              # Entrar, ver a sessão e sair
 │   │   └── usuarios.js            # Rota de cadastro em /api/usuarios
 │   ├── scripts/
 │   │   ├── popular.js             # Script do `npm run banco:popular`

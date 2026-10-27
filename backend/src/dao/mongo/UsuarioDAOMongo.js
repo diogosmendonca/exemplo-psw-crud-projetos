@@ -35,4 +35,12 @@ export class UsuarioDAOMongo extends UsuarioDAO {
 
     return { ...paraUsuario(documento), senhaHash: documento.senhaHash }
   }
+
+  async buscarPorId(id) {
+    if (typeof id !== 'string' || !/^[0-9a-f]{24}$/i.test(id)) return null
+
+    const documento = await Usuario.findById(id).lean()
+
+    return documento ? paraUsuario(documento) : null
+  }
 }

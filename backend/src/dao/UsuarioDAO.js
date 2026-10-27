@@ -34,7 +34,7 @@ export class UsuarioJaCadastrado extends Error {
  * Contrato do DAO de usuários. Cada banco tem uma classe que estende esta.
  *
  * A resposta da API nunca inclui a senha. `buscarParaAutenticacao` é a exceção:
- * só a estratégia Basic do Passport a usa, para conferir o hash.
+ * só a estratégia local do Passport a usa, para conferir o hash no login.
  */
 export class UsuarioDAO {
   /**
@@ -55,5 +55,15 @@ export class UsuarioDAO {
    */
   async buscarParaAutenticacao(nomeUsuario) {
     throw new Error(`UsuarioDAO.buscarParaAutenticacao(${nomeUsuario}) não foi implementado.`)
+  }
+
+  /**
+   * Usado ao restaurar a sessão (o cookie guarda só o id).
+   *
+   * @param {string} id
+   * @returns {Promise<Usuario|null>}
+   */
+  async buscarPorId(id) {
+    throw new Error(`UsuarioDAO.buscarPorId(${id}) não foi implementado.`)
   }
 }

@@ -14,7 +14,7 @@ const URL_CLIENTES = `${URL_BASE_API}/clientes`
  */
 export async function listarClientes() {
   try {
-    const resposta = await fetch(URL_CLIENTES)
+    const resposta = await fetch(URL_CLIENTES, { credentials: 'include' })
 
     if (pedirAutenticacao(resposta)) return new Promise(() => {})
 

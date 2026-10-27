@@ -1,11 +1,9 @@
 import passport from 'passport'
-import { BasicStrategy } from 'passport-http'
 import { Strategy as EstrategiaLocal } from 'passport-local'
-import { ambiente } from '../config/ambiente.js'
 import { UsuarioJaCadastrado } from '../dao/UsuarioDAO.js'
 import { conferirSenha, gerarHashDaSenha } from './senha.js'
 
-const REALM = 'Gerenciador de Projetos'
+const MENSAGEM_LOGIN = 'Usuário ou senha inválidos.'
 
 /**
  * Estratégia de cadastro do Passport.
@@ -65,52 +63,72 @@ export function cadastrar(requisicao, resposta, proximo) {
 }
 
 /**
- * Estratégia Basic do Passport: o navegador manda o nome de usuário e a senha
- * no cabeçalho `Authorization`. Não há sessão; cada requisição traz as
- * credenciais de novo. O hash é conferido com o bcrypt.
+ * Estratégia local do Passport, usada no login. O nome de usuário e a senha
+ * vêm do corpo do `POST /api/sessao` (a tela de entrada), uma única vez. A
+ * sessão guarda o id; as requisições seguintes mandam só o cookie.
  *
  * @param {import('../dao/UsuarioDAO.js').UsuarioDAO} usuarios
  */
 export function configurarAutenticacao(usuarios) {
   passport.use(
-    'basic',
-    new BasicStrategy({ realm: REALM }, async (nomeUsuario, senha, done) => {
-      try {
-        const encontrado = await usuarios.buscarParaAutenticacao(nomeUsuario.trim())
+    'local',
+    new EstrategiaLocal(
+      { usernameField: 'nomeUsuario', passwordField: 'senha' },
+      async (nomeUsuario, senha, done) => {
+        try {
+          const encontrado = await usuarios.buscarParaAutenticacao(nomeUsuario)
 
-        if (!encontrado) return done(null, false)
+          if (!encontrado) return done(null, false, { message: MENSAGEM_LOGIN })
 
-        const { senhaHash, ...usuario } = encontrado
-        done(null, (await conferirSenha(senha, senhaHash)) ? usuario : false)
-      } catch (erro) {
-        done(erro)
-      }
-    }),
+          const { senhaHash, ...usuario } = encontrado
+          const confere = await conferirSenha(senha, senhaHash)
+
+          done(null, confere ? usuario : false, confere ? undefined : { message: MENSAGEM_LOGIN })
+        } catch (erro) {
+          done(erro)
+        }
+      },
+    ),
   )
+
+  // O cookie não leva o usuário inteiro: só o id. A cada requisição o Passport
+  // busca o usuário de novo.
+  passport.serializeUser((usuario, done) => done(null, usuario.id))
+  passport.deserializeUser(async (id, done) => {
+    try {
+      done(null, await usuarios.buscarPorId(id))
+    } catch (erro) {
+      done(erro)
+    }
+  })
 }
 
 /**
- * Exige Basic Auth. Sem credencial válida, responde 401 com
- * `WWW-Authenticate`, que é o que faz o navegador abrir o prompt nativo.
+ * Exige uma sessão autenticada. A tela de entrada e o `POST /api/sessao`
+ * ficam de fora. O preflight do CORS também passa sem sessão.
  */
 export function autenticar(requisicao, resposta, proximo) {
-  // O preflight do CORS não traz a senha; quem autentica é a requisição seguinte.
   if (requisicao.method === 'OPTIONS') return proximo()
+  if (requisicao.isAuthenticated()) return proximo()
 
-  passport.authenticate('basic', { session: false }, (erro, usuario) => {
+  resposta.status(401).json({ mensagem: 'É preciso entrar para acessar.' })
+}
+
+/**
+ * Login. O corpo já foi validado. O Passport confere a senha e, se estiver
+ * certa, grava o id do usuário na sessão (`req.login`).
+ */
+export function entrar(requisicao, resposta, proximo) {
+  passport.authenticate('local', (erro, usuario, info) => {
     if (erro) return proximo(erro)
 
     if (!usuario) {
-      resposta.set('WWW-Authenticate', `Basic realm="${REALM}"`)
-      return resposta.status(401).json({ mensagem: 'É preciso se autenticar para acessar.' })
+      return resposta.status(401).json({ mensagem: info?.message ?? MENSAGEM_LOGIN })
     }
 
-    requisicao.user = usuario
-    proximo()
+    requisicao.login(usuario, (erroLogin) => {
+      if (erroLogin) return proximo(erroLogin)
+      resposta.json(usuario)
+    })
   })(requisicao, resposta, proximo)
-}
-
-/** Depois que o prompt é aceito, volta para a aplicação. */
-export function redirecionarAposAutenticacao(requisicao, resposta) {
-  resposta.redirect(ambiente.origemPermitida ? `${ambiente.origemPermitida}/` : '/')
 }
