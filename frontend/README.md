@@ -174,8 +174,12 @@ Exemplo de projeto:
 | `/projetos/novo` | Formulário de novo projeto |
 | `/projetos/:id` | Formulário de alteração |
 | `/projetos/:id/excluir` | Listagem com o modal de confirmação de exclusão |
-| `/usuarios/novo` | Cadastro de usuário (Administrador ou Gerente de Projetos) |
+| `/usuarios` | Listagem de usuários (somente administrador) |
+| `/usuarios/novo` | Cadastro de usuário pelo administrador |
+| `/usuarios/:id` | Alteração de usuário pelo administrador |
+| `/usuarios/:id/excluir` | Listagem com o modal de confirmação de exclusão |
 | `/entrar` | Tela de entrada (recebe o JWT) |
+| `/registrar` | Registro público de Gerente de Projetos |
 
 ### Publicação (produção)
 

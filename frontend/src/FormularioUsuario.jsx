@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PERFIS_USUARIO, ROTULO_PERFIL_USUARIO } from '@gerenciador-de-projetos/compartilhado'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
-import { cadastrarUsuario } from './api/usuarios.js'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAviso } from './aviso/contexto.js'
-import { Alerta, CampoFormulario, TituloPagina } from './design-system'
-import schemaUsuario from './schemas/usuarioSchema.js'
+import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
+import { useMutacoesUsuarios, useUsuario } from './hooks/useUsuarios.js'
+import schemaFormularioUsuario, { schemaFormularioAlteracao } from './schemas/usuarioSchema.js'
 
 const estadoInicial = {
   nome: '',
@@ -16,26 +16,61 @@ const estadoInicial = {
   perfil: '',
 }
 
+function dadosDoUsuario(usuario) {
+  return {
+    nome: usuario.nome,
+    email: usuario.email,
+    nomeUsuario: usuario.nomeUsuario,
+    senha: '',
+    confirmarSenha: '',
+    perfil: usuario.perfil,
+  }
+}
+
 function FormularioUsuario() {
+  const { id } = useParams()
+  const { usuario, carregando, erro } = useUsuario(id)
+  const editando = Boolean(id)
+
+  if (editando && carregando) return <Carregando>Carregando usuário...</Carregando>
+  if (editando && erro) return <Alerta>{erro}</Alerta>
+  if (editando && !usuario) return <Alerta>Usuário não encontrado.</Alerta>
+
+  return (
+    <CamposUsuario
+      key={id ?? 'novo'}
+      id={id}
+      editando={editando}
+      dadosIniciais={usuario ? dadosDoUsuario(usuario) : estadoInicial}
+    />
+  )
+}
+
+function CamposUsuario({ id, editando, dadosIniciais }) {
   const navigate = useNavigate()
   const { mostrarSucesso } = useAviso()
+  const { criarUsuario, atualizarUsuario } = useMutacoesUsuarios()
   const {
     register,
     handleSubmit,
     setError,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm({
-    defaultValues: estadoInicial,
-    resolver: zodResolver(schemaUsuario),
+    defaultValues: dadosIniciais,
+    resolver: zodResolver(editando ? schemaFormularioAlteracao : schemaFormularioUsuario),
   })
 
-  const submeter = async (dados) => {
+  const submeter = async ({ confirmarSenha: _confirmacao, senha, ...dados }) => {
+    const corpo = senha ? { ...dados, senha } : dados
+
     try {
-      // `confirmarSenha` só existe na tela; o schema da API descarta o campo.
-      const usuario = await cadastrarUsuario(dados)
-      reset(estadoInicial)
-      mostrarSucesso(`O usuário ${usuario.nome} foi cadastrado com sucesso.`)
+      const usuario = editando ? await atualizarUsuario(id, corpo) : await criarUsuario({ ...corpo, senha })
+      mostrarSucesso(
+        editando
+          ? `O usuário ${usuario.nome} foi alterado com sucesso.`
+          : `O usuário ${usuario.nome} foi cadastrado com sucesso.`,
+      )
+      navigate('/usuarios')
     } catch (erroDaSubmissao) {
       const destino = erroDaSubmissao.campo ?? 'root.serverError'
       setError(destino, { type: 'server', message: erroDaSubmissao.message })
@@ -45,7 +80,7 @@ function FormularioUsuario() {
   return (
     <section className="row justify-content-center">
       <div className="col-12 col-lg-8">
-        <TituloPagina>Cadastrar usuário</TituloPagina>
+        <TituloPagina>{editando ? 'Alterar usuário' : 'Cadastrar usuário'}</TituloPagina>
         <form onSubmit={handleSubmit(submeter)} noValidate>
           <CampoFormulario
             id="nome-usuario"
@@ -78,7 +113,11 @@ function FormularioUsuario() {
             rotulo="Senha"
             type="password"
             autoComplete="new-password"
-            ajuda="De 8 a 72 caracteres. Ela não é gravada em texto."
+            ajuda={
+              editando
+                ? 'Deixe em branco para manter a senha atual. Se for trocá-la, use de 8 a 72 caracteres.'
+                : 'De 8 a 72 caracteres. Ela não é gravada em texto.'
+            }
             erro={errors.senha}
             {...register('senha')}
           />
@@ -110,12 +149,12 @@ function FormularioUsuario() {
           {errors.root?.serverError && <Alerta>{errors.root.serverError.message}</Alerta>}
           <div className="d-flex flex-wrap gap-2">
             <button className="btn btn-primary ds-alvo-toque" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : 'Cadastrar usuário'}
+              {isSubmitting ? 'Salvando...' : editando ? 'Salvar alterações' : 'Cadastrar usuário'}
             </button>
             <button
               className="btn btn-outline-secondary ds-alvo-toque"
               type="button"
-              onClick={() => navigate('/projetos')}
+              onClick={() => navigate('/usuarios')}
             >
               Voltar
             </button>

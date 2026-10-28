@@ -24,6 +24,9 @@ const schemaProjeto = new mongoose.Schema(
     // Referência ao cliente (`_id` na coleção `cliente`). Opcional: projetos
     // antigos não têm cliente.
     cliente: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', default: null },
+    // Gerente de projetos dono deste projeto. Projetos antigos ficam sem gerente
+    // até um administrador associar alguém; só o administrador os vê.
+    gerente: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', default: null, index: true },
     descricao: { type: String, default: '' },
     tecnologias: { type: [String], default: [] },
     url: {

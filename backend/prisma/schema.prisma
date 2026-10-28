@@ -49,13 +49,17 @@ model Projeto {
   url         String        @default("")
   clienteId   Int?          @map("cliente_id")
   cliente     Cliente?      @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  // Gerente de projetos dono deste projeto. Nulo só em projetos antigos, até
+  // um administrador associar alguém. Restrict: não apaga o gerente enquanto
+  // ainda houver projeto dele.
+  gerenteId   Int?          @map("gerente_id")
+  gerente     Usuario?      @relation(fields: [gerenteId], references: [id], onDelete: Restrict)
 
   @@index([clienteId])
+  @@index([gerenteId])
   @@map("projetos")
 }
 
-// Cada projeto será de um único usuário. Essa ligação ainda não existe:
-// por enquanto só o cadastro de usuário está pronto.
 model Usuario {
   id               Int           @id @default(autoincrement())
   nome             String        @db.VarChar(100)
@@ -67,6 +71,7 @@ model Usuario {
   // Hash bcrypt. A senha em texto nunca é gravada nem devolvida.
   senhaHash        String        @map("senha_hash")
   perfil           PerfilUsuario
+  projetos         Projeto[]
 
   @@map("usuario")
 }

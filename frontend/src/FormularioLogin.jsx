@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { schemaLogin } from '@gerenciador-de-projetos/compartilhado'
 import { useForm } from 'react-hook-form'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { entrar } from './api/token.js'
 import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
 import { autenticacaoQueryKey, useAutenticacao } from './hooks/useAutenticacao.js'
@@ -65,6 +65,9 @@ function CamposLogin() {
             {isSubmitting ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+        <p className="mt-4 mb-0">
+          Não tem uma conta? <Link to="/registrar">Registre-se</Link>
+        </p>
       </div>
     </section>
   )

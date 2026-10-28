@@ -1,4 +1,9 @@
-import { schemaLogin, schemaUsuario } from '@gerenciador-de-projetos/compartilhado'
+import {
+  schemaLogin,
+  schemaRegistro,
+  schemaUsuario,
+  schemaUsuarioAlteracao,
+} from '@gerenciador-de-projetos/compartilhado'
 
 /**
  * Valida e normaliza o corpo recebido para cadastrar um usuário, com o mesmo
@@ -9,6 +14,24 @@ import { schemaLogin, schemaUsuario } from '@gerenciador-de-projetos/compartilha
  */
 export function validarUsuario(corpo) {
   const resultado = schemaUsuario.safeParse(corpo)
+
+  if (resultado.success) return { usuario: resultado.data }
+
+  return { erros: [...new Set(resultado.error.issues.map((problema) => problema.message))] }
+}
+
+/** Registro público. O perfil não faz parte do corpo. */
+export function validarRegistro(corpo) {
+  const resultado = schemaRegistro.safeParse(corpo)
+
+  if (resultado.success) return { usuario: resultado.data }
+
+  return { erros: [...new Set(resultado.error.issues.map((problema) => problema.message))] }
+}
+
+/** Alteração. A senha pode vir vazia: nesse caso ela não é trocada. */
+export function validarAlteracao(corpo) {
+  const resultado = schemaUsuarioAlteracao.safeParse(corpo)
 
   if (resultado.success) return { usuario: resultado.data }
 

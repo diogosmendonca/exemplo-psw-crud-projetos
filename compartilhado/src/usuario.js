@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
 /**
- * Regras do usuário, as mesmas no front-end (cadastro) e no back-end (API).
+ * Regras do usuário, as mesmas no front-end e no back-end.
  *
- * O controle de acesso ainda não existe: isto só descreve o cadastro. A senha
- * entra em texto aqui para ser validada; quem grava (a estratégia de cadastro
- * do Passport) troca ela por um hash e ela nunca volta na resposta.
+ * A senha entra em texto aqui para ser validada. Quem grava troca ela por um
+ * hash e ela nunca volta na resposta. O registro público não escolhe perfil:
+ * a API grava sempre Gerente de Projetos. O CRUD completo é do administrador.
  */
 
 export const PERFIS_USUARIO = ['administrador', 'gerente']
@@ -73,3 +73,18 @@ export const schemaUsuario = z.object(
   },
   { error: 'O corpo da requisição deve ser um objeto JSON com os dados do usuário.' },
 )
+
+/** Registro público. O perfil não vem no corpo: a API grava `gerente`. */
+export const schemaRegistro = schemaUsuario.omit({ perfil: true })
+
+/**
+ * Alteração pelo administrador. A senha é opcional: vazia ou ausente mantém
+ * a senha atual.
+ */
+export const schemaUsuarioAlteracao = schemaUsuario.omit({ senha: true }).extend({
+  senha: z
+    .string()
+    .max(TAMANHO_MAXIMO_SENHA, mensagemSenha)
+    .refine((valor) => valor.length === 0 || valor.length >= TAMANHO_MINIMO_SENHA, mensagemSenha)
+    .optional(),
+})

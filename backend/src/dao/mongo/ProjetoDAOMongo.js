@@ -1,6 +1,8 @@
 import { ProjetoDAO } from '../ProjetoDAO.js'
 import { paraCliente } from './ClienteDAOMongo.js'
 import { Projeto } from './modelos/projeto.js'
+// Garante o model `Usuario` antes do `populate('gerente')`.
+import './modelos/usuario.js'
 
 // O `_id` do MongoDB é um ObjectId: 24 caracteres hexadecimais. Um texto fora
 // desse formato faria o Mongoose lançar `CastError`; aqui ele é tratado como
@@ -11,7 +13,13 @@ function idValido(id) {
   return typeof id === 'string' && FORMATO_ID.test(id)
 }
 
-/** Documento do MongoDB (com o cliente populado) → projeto no formato da API. */
+function paraGerente(gerente) {
+  if (!gerente?._id) return null
+
+  return { id: String(gerente._id), nome: gerente.nome }
+}
+
+/** Documento do MongoDB (com cliente e gerente populados) → projeto no formato da API. */
 function paraProjeto(documento) {
   return {
     id: String(documento._id),
@@ -21,6 +29,7 @@ function paraProjeto(documento) {
     descricao: documento.descricao,
     tecnologias: [...documento.tecnologias],
     url: documento.url,
+    gerente: paraGerente(documento.gerente),
   }
 }
 
@@ -31,18 +40,26 @@ export class ProjetoDAOMongo extends ProjetoDAO {
     this.clientes = clientes
   }
 
-  /** Troca `cliente: { nome }` pelo `_id` do cliente, criando-o se for novo. */
-  async #paraDocumento({ cliente, ...dados }) {
-    if (!cliente) return { ...dados, cliente: null }
+  /** Troca `cliente: { nome }` e `gerenteId` pelos `_id` gravados no documento. */
+  async #paraDocumento({ cliente, gerenteId, ...dados }) {
+    const documento = { ...dados, gerente: gerenteId || null }
+
+    if (!cliente) return { ...documento, cliente: null }
 
     const { id } = await this.clientes.obterOuCriar(cliente.nome)
 
-    return { ...dados, cliente: id }
+    return { ...documento, cliente: id }
   }
 
-  async listar() {
+  async #buscar(filtro) {
+    return Projeto.find(filtro).sort({ _id: 1 }).populate('cliente').populate('gerente').lean()
+  }
+
+  async listar(gerenteId) {
+    if (gerenteId && !idValido(gerenteId)) return []
+
     // O `_id` começa com a data de criação, então ordenar por ele é ordenar por criação.
-    const projetos = await Projeto.find().sort({ _id: 1 }).populate('cliente').lean()
+    const projetos = await this.#buscar(gerenteId ? { gerente: gerenteId } : {})
 
     return projetos.map(paraProjeto)
   }
@@ -50,7 +67,7 @@ export class ProjetoDAOMongo extends ProjetoDAO {
   async buscarPorId(id) {
     if (!idValido(id)) return null
 
-    const projeto = await Projeto.findById(id).populate('cliente').lean()
+    const projeto = await Projeto.findById(id).populate('cliente').populate('gerente').lean()
 
     return projeto ? paraProjeto(projeto) : null
   }
@@ -58,7 +75,7 @@ export class ProjetoDAOMongo extends ProjetoDAO {
   async criar(dados) {
     const projeto = await Projeto.create(await this.#paraDocumento(dados))
 
-    return paraProjeto(await projeto.populate('cliente'))
+    return paraProjeto(await projeto.populate(['cliente', 'gerente']))
   }
 
   async alterar(id, dados) {
@@ -71,6 +88,7 @@ export class ProjetoDAOMongo extends ProjetoDAO {
       runValidators: true,
     })
       .populate('cliente')
+      .populate('gerente')
       .lean()
 
     return projeto ? paraProjeto(projeto) : null
@@ -80,5 +98,11 @@ export class ProjetoDAOMongo extends ProjetoDAO {
     if (!idValido(id)) return false
 
     return (await Projeto.findByIdAndDelete(id)) !== null
+  }
+
+  async existeDoGerente(gerenteId) {
+    if (!idValido(gerenteId)) return false
+
+    return (await Projeto.exists({ gerente: gerenteId })) !== null
   }
 }

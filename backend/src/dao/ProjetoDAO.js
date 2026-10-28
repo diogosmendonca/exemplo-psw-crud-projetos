@@ -16,13 +16,15 @@
  * @property {string} descricao
  * @property {string[]} tecnologias
  * @property {string} url
+ * @property {{ id: string, nome: string } | null} gerente Gerente de projetos
+ *   dono do projeto, ou `null` se ainda não foi associado.
  */
 
 /**
  * Dados para criar ou alterar um projeto, já validados por `validarProjeto`.
  * O cliente vem só com o nome: o DAO o cria se ainda não existir.
  *
- * @typedef {Omit<Projeto, 'id' | 'cliente'> & { cliente: { nome: string } | null }} DadosProjeto
+ * @typedef {Omit<Projeto, 'id' | 'cliente' | 'gerente'> & { cliente: { nome: string } | null, gerenteId: string | null }} DadosProjeto
  */
 
 /**
@@ -33,9 +35,13 @@
  * inexistente: `buscarPorId` e `alterar` devolvem `null` e `excluir`, `false`.
  */
 export class ProjetoDAO {
-  /** @returns {Promise<Projeto[]>} Todos os projetos, do mais antigo para o mais novo. */
-  async listar() {
-    throw new Error('ProjetoDAO.listar não foi implementado.')
+  /**
+   * @param {string} [gerenteId] Se informado, só os projetos desse gerente.
+   *   Sem o argumento, devolve todos (o administrador).
+   * @returns {Promise<Projeto[]>} Do mais antigo para o mais novo.
+   */
+  async listar(gerenteId) {
+    throw new Error(`ProjetoDAO.listar(${gerenteId ?? ''}) não foi implementado.`)
   }
 
   /**
@@ -71,5 +77,13 @@ export class ProjetoDAO {
    */
   async excluir(id) {
     throw new Error(`ProjetoDAO.excluir(${id}) não foi implementado.`)
+  }
+
+  /**
+   * @param {string} gerenteId
+   * @returns {Promise<boolean>} `true` se esse gerente ainda tem algum projeto.
+   */
+  async existeDoGerente(gerenteId) {
+    throw new Error(`ProjetoDAO.existeDoGerente(${gerenteId}) não foi implementado.`)
   }
 }

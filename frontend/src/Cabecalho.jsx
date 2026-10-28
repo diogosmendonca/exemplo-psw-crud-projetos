@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { Container, Nav, Navbar } from 'react-bootstrap'
-import { FolderKanban, FolderPlus, LogOut, UserPlus } from 'lucide-react'
+import { FolderKanban, FolderPlus, LogOut, Users } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
 // Itens do menu principal. Para adicionar uma página ao menu, inclua um item aqui.
 const ITENS_MENU = [
   { para: '/projetos', rotulo: 'Projetos', Icone: FolderKanban, exato: true },
   { para: '/projetos/novo', rotulo: 'Novo projeto', Icone: FolderPlus, exato: false },
-  { para: '/usuarios/novo', rotulo: 'Cadastrar usuário', Icone: UserPlus, exato: true },
+  { para: '/usuarios', rotulo: 'Usuários', Icone: Users, exato: true, somenteAdministrador: true },
 ]
 
 function Cabecalho({ usuario, aoSair }) {
   const navRef = useRef(null)
   const [aberto, setAberto] = useState(false)
   const fecharMenu = () => setAberto(false)
+  const itensVisiveis = ITENS_MENU.filter(
+    (item) => !item.somenteAdministrador || usuario.perfil === 'administrador',
+  )
 
   // No mobile o menu fecha ao interagir fora dele. O clique fora precisa de um
   // listener no documento porque nem todo navegador move o foco ao tocar.
@@ -53,7 +56,7 @@ function Cabecalho({ usuario, aoSair }) {
         />
         <Navbar.Collapse id="menu-principal">
           <Nav className="ms-auto">
-            {ITENS_MENU.map(({ para, rotulo, Icone, exato }) => (
+            {itensVisiveis.map(({ para, rotulo, Icone, exato }) => (
               <Nav.Link
                 key={para}
                 as={NavLink}

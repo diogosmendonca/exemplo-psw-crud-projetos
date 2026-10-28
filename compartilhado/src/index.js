@@ -10,5 +10,7 @@ export {
   TAMANHO_MAXIMO_NOME_DE_USUARIO,
   TAMANHO_MAXIMO_NOME_USUARIO,
   schemaLogin,
+  schemaRegistro,
   schemaUsuario,
+  schemaUsuarioAlteracao,
 } from './usuario.js'

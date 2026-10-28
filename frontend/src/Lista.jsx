@@ -99,6 +99,8 @@ function Lista() {
                       <h3 className="h5 card-title mb-1">{nomeDoProjeto(projeto)}</h3>
                       <p className="card-subtitle text-body-secondary mb-0">
                         {projeto.cliente?.nome ?? 'Sem cliente'}
+                        {' · '}
+                        {projeto.gerente?.nome ?? 'Sem gerente'}
                       </p>
                     </div>
                     <StatusBadge status={projeto.status} />
@@ -116,6 +118,7 @@ function Lista() {
                   <tr>
                     <th scope="col">Projeto</th>
                     <th scope="col">Cliente</th>
+                    <th scope="col">Gerente</th>
                     <th scope="col">Status</th>
                     <th scope="col">Ações</th>
                   </tr>
@@ -126,6 +129,9 @@ function Lista() {
                       <td>{nomeDoProjeto(projeto)}</td>
                       <td>
                         {projeto.cliente?.nome ?? <span className="text-body-secondary">—</span>}
+                      </td>
+                      <td>
+                        {projeto.gerente?.nome ?? <span className="text-body-secondary">—</span>}
                       </td>
                       <td>
                         <StatusBadge status={projeto.status} />

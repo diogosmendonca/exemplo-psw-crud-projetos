@@ -44,8 +44,8 @@ prefixo `/api` (veja [Rotas](#rotas)).
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `GET` | `/api/projetos` | Lista os projetos. Responde `200` com um array JSON. |
-| `GET` | `/api/projetos/:id` | Devolve os dados de um projeto. Responde `200` com o projeto, ou `404` se não existir. |
+| `GET` | `/api/projetos` | Lista os projetos. O administrador vê todos; o gerente, só os associados a ele. Responde `200` com um array JSON. |
+| `GET` | `/api/projetos/:id` | Devolve os dados de um projeto. Responde `200` com o projeto, ou `404` se não existir ou não for do gerente autenticado. |
 | `POST` | `/api/projetos` | Cria um projeto a partir do JSON do corpo. Responde `201` com o projeto criado e o cabeçalho `Location`. |
 | `PUT` | `/api/projetos/:id` | Substitui os dados do projeto pelo JSON do corpo. Responde `200` com o projeto alterado. |
 | `DELETE` | `/api/projetos/:id` | Exclui o projeto. Responde `204`, sem corpo. |
@@ -70,7 +70,8 @@ também chegam como texto (`"id": "1"`), então o front-end não muda.
     "cliente": { "id": "6aceb46b5086adf91b73212a", "nome": "CEFET/RJ" },
     "descricao": "Portal web para consulta de notas, faltas e horários.",
     "tecnologias": ["React", "Vite", "Bootstrap"],
-    "url": "https://exemplo.com/portal-do-aluno"
+    "url": "https://exemplo.com/portal-do-aluno",
+    "gerente": { "id": "6aceb46b5086adf91b732130", "nome": "Maria Souza" }
   }
 ]
 ```
@@ -107,6 +108,7 @@ Corpo da requisição (JSON):
 | `descricao` | Não | Texto. Padrão: `""`. |
 | `tecnologias` | Não | Lista de textos. Padrão: `[]`. |
 | `url` | Não | URL válida ou vazia. Padrão: `""`. |
+| `gerenteId` | Sim, ao criar ou alterar | Id de um usuário com perfil gerente. O gerente autenticado é associado a si mesmo, e um id enviado por ele é ignorado. Projetos antigos podem continuar com `gerente: null` até um administrador associar alguém; o gerente não os vê. |
 
 O `id` é gerado pelo banco. Um `id` enviado no corpo e
 campos desconhecidos são ignorados.
@@ -125,7 +127,8 @@ curl -i -X POST http://localhost:3001/api/projetos \
   "cliente": null,
   "descricao": "",
   "tecnologias": ["Node.js"],
-  "url": ""
+  "url": "",
+  "gerente": { "id": "6aceb46b5086adf91b732130", "nome": "Maria Souza" }
 }
 ```
 
@@ -158,7 +161,7 @@ curl -i -X PUT http://localhost:3001/api/projetos/6aceb46b5086adf91b732127 \
 | Resposta | Quando |
 | --- | --- |
 | `200` | Projeto alterado. O corpo é o projeto com os novos dados. |
-| `404` | Não existe projeto com esse `id` (inclusive um id fora do formato): `{ "mensagem": "Projeto não encontrado." }`. |
+| `404` | Não existe projeto com esse `id` (inclusive um id fora do formato), ou o gerente autenticado não é o dono: `{ "mensagem": "Projeto não encontrado." }`. |
 | `400` | Corpo inválido, no mesmo formato de erros do `POST`. |
 
 O `404` tem prioridade sobre o `400`: com um id inexistente, o corpo nem é validado.
@@ -172,15 +175,24 @@ curl -i -X DELETE http://localhost:3001/api/projetos/6aceb46b5086adf91b732127
 | Resposta | Quando |
 | --- | --- |
 | `204` | Projeto excluído. A resposta não tem corpo. |
-| `404` | Não existe projeto com esse `id` (inclusive um id fora do formato): `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
+| `404` | Não existe projeto com esse `id` (inclusive um id fora do formato), ou o gerente autenticado não é o dono: `{ "mensagem": "Projeto não encontrado." }`. Excluir duas vezes o mesmo projeto, portanto, devolve `404` na segunda. |
 
 O id de um projeto excluído **não é reaproveitado** (nem no MongoDB, nem na sequência
 do PostgreSQL), então um link antigo nunca aponta para outro projeto.
 
 ## Usuários
 
-O cadastro fica em **Cadastrar usuário** (`/usuarios/novo`). Ainda não há listagem
-nem controle de acesso por perfil, e o projeto ainda não é ligado a um usuário.
+O administrador gerencia os usuários em **Usuários** (`/usuarios`): listar, cadastrar
+(Administrador ou Gerente de Projetos), alterar e excluir. Um gerente autenticado
+recebe `403` nessas rotas. Ele não exclui a própria conta nem troca o próprio perfil.
+Excluir um gerente que ainda tem projetos responde `409`: associe os projetos a
+outro gerente antes.
+
+Quem ainda não tem conta registra em **Registrar** (`/registrar`), a partir da tela
+de entrar. `POST /api/registro` é público e grava sempre o perfil `gerente`, mesmo
+que o corpo peça outro. Cada projeto tem um gerente. O administrador vê todos os
+projetos e escolhe o gerente no formulário. O gerente vê, altera e exclui só os
+projetos associados a ele.
 
 A entrada é a tela **Entrar** (`/entrar`). O `POST /api/token` manda o nome de
 usuário e a senha **uma vez**; a estratégia local do Passport confere o hash com
@@ -206,15 +218,18 @@ curl http://localhost:3001/api/projetos \
 | `senha` | De 8 a 72 caracteres. Não volta na resposta. |
 | `perfil` | `administrador` (Administrador) ou `gerente` (Gerente de Projetos). |
 
-A rota valida o corpo com o `schemaUsuario` do pacote compartilhado (o mesmo do
-formulário) e entrega o cadastro à estratégia `cadastro` do Passport. O Passport não
-gera o hash: a estratégia usa o bcrypt e o DAO grava só o resultado. A resposta é
+O cadastro valida o corpo com o schema do pacote compartilhado e entrega a senha à
+estratégia `cadastro` do Passport, que gera o hash com o bcrypt. Na alteração, a senha
+nova segue o mesmo hash; se ela não vier, a atual permanece. A resposta é
 `{ id, nome, email, nomeUsuario, perfil }`.
 
 ```bash
-curl -i -X POST http://localhost:3001/api/usuarios \
+curl -i -X POST http://localhost:3001/api/registro \
   -H "Content-Type: application/json" \
-  -d '{"nome":"Ana","email":"ana@exemplo.com","nomeUsuario":"ana","senha":"segredo123","perfil":"gerente"}'
+  -d '{"nome":"Ana","email":"ana@exemplo.com","nomeUsuario":"ana","senha":"segredo123"}'
+
+curl -i http://localhost:3001/api/usuarios \
+  -H "Authorization: Bearer TOKEN_DE_ADMINISTRADOR"
 ```
 
 ## Clientes
@@ -463,6 +478,7 @@ backend/
 │   └── schema.prisma              # Tabelas do PostgreSQL
 ├── src/
 │   ├── autenticacao/
+│   │   ├── autorizacao.js         # Exige o perfil administrador
 │   │   ├── passport.js            # Estratégias local (login), JWT e de cadastro
 │   │   ├── senha.js               # Hash bcrypt da senha
 │   │   └── token.js               # Assina o JWT do login
@@ -494,8 +510,9 @@ backend/
 │   ├── rotas/
 │   │   ├── clientes.js            # Rota de /api/clientes
 │   │   ├── projetos.js            # Rotas de /api/projetos
+│   │   ├── registro.js            # Registro público de gerente
 │   │   ├── token.js               # Entrar e ler o usuário do JWT
-│   │   └── usuarios.js            # Rota de cadastro em /api/usuarios
+│   │   └── usuarios.js            # CRUD de /api/usuarios (administrador)
 │   ├── scripts/
 │   │   ├── popular.js             # Script do `npm run banco:popular`
 │   │   └── testarConexao.js       # Script do `npm run banco:testar`

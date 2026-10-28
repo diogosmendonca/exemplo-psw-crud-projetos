@@ -48,6 +48,13 @@ export class UsuarioDAO {
   }
 
   /**
+   * @returns {Promise<Usuario[]>} Usuários sem a senha, em ordem de nome.
+   */
+  async listar() {
+    throw new Error('UsuarioDAO.listar() não foi implementado.')
+  }
+
+  /**
    * Busca pelo nome de usuário, sem diferenciar maiúsculas.
    *
    * @param {string} nomeUsuario
@@ -65,5 +72,25 @@ export class UsuarioDAO {
    */
   async buscarPorId(id) {
     throw new Error(`UsuarioDAO.buscarPorId(${id}) não foi implementado.`)
+  }
+
+  /**
+   * Substitui os dados do usuário. `senhaHash` só vem quando a senha muda.
+   *
+   * @param {string} id
+   * @param {Omit<Usuario, 'id'> & { senhaHash?: string }} dados
+   * @returns {Promise<Usuario|null>} `null` se o id não existe.
+   * @throws {UsuarioJaCadastrado}
+   */
+  async alterar(id, dados) {
+    throw new Error(`UsuarioDAO.alterar(${id}, ${dados?.nomeUsuario}) não foi implementado.`)
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<boolean>} `false` se o id não existe.
+   */
+  async excluir(id) {
+    throw new Error(`UsuarioDAO.excluir(${id}) não foi implementado.`)
   }
 }

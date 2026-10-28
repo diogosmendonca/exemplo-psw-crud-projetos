@@ -3,8 +3,10 @@ import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAviso } from './aviso/contexto.js'
 import { Alerta, CampoFormulario, Carregando, TituloPagina } from './design-system'
+import { useAutenticacao } from './hooks/useAutenticacao.js'
 import { useClientes } from './hooks/useClientes.js'
 import { useMutacoesProjetos, useProjeto } from './hooks/useProjetos.js'
+import { useGerentes } from './hooks/useUsuarios.js'
 import schemaProjeto, { NOVO_CLIENTE } from './schemas/projetoSchema.js'
 
 const estadoInicial = {
@@ -15,6 +17,7 @@ const estadoInicial = {
   descricao: '',
   tecnologias: '',
   url: '',
+  gerenteId: '',
 }
 
 function dadosDoProjeto(projeto) {
@@ -28,14 +31,17 @@ function dadosDoProjeto(projeto) {
       ? projeto.tecnologias.join(', ')
       : projeto.tecnologias ?? '',
     url: projeto.url ?? '',
+    gerenteId: projeto.gerente?.id ?? '',
   }
 }
 
 function FormularioProjeto() {
   const { id } = useParams()
+  const { usuario } = useAutenticacao()
   const { projeto, carregando, erro } = useProjeto(id)
   const { criarProjeto, atualizarProjeto } = useMutacoesProjetos()
   const editando = Boolean(id)
+  const ehGerente = usuario?.perfil === 'gerente'
 
   if (editando && carregando) return <Carregando>Carregando projeto...</Carregando>
 
@@ -43,12 +49,18 @@ function FormularioProjeto() {
 
   if (editando && !projeto) return <Alerta>Projeto não encontrado.</Alerta>
 
+  const dadosIniciais = projeto
+    ? dadosDoProjeto(projeto)
+    : { ...estadoInicial, gerenteId: ehGerente ? usuario.id : '' }
+
   return (
     <CamposFormulario
       key={id ?? 'novo'}
       id={id}
       editando={editando}
-      dadosIniciais={projeto ? dadosDoProjeto(projeto) : estadoInicial}
+      dadosIniciais={dadosIniciais}
+      gerenteAtual={projeto?.gerente ?? null}
+      usuario={usuario}
       criarProjeto={criarProjeto}
       atualizarProjeto={atualizarProjeto}
     />
@@ -59,12 +71,16 @@ function CamposFormulario({
   id,
   editando,
   dadosIniciais,
+  gerenteAtual,
+  usuario,
   criarProjeto,
   atualizarProjeto,
 }) {
   const navigate = useNavigate()
   const { mostrarSucesso } = useAviso()
   const { clientes } = useClientes()
+  const ehGerente = usuario?.perfil === 'gerente'
+  const { gerentes, erro: erroDosGerentes } = useGerentes(!ehGerente)
   const {
     register,
     handleSubmit,
@@ -81,6 +97,10 @@ function CamposFormulario({
   const nomesDeClientes = [
     ...new Set([dadosIniciais.cliente, ...clientes.map((cliente) => cliente.nome)].filter(Boolean)),
   ].sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }))
+  const opcoesDeGerente = [...gerentes]
+  if (gerenteAtual && !opcoesDeGerente.some((gerente) => gerente.id === gerenteAtual.id)) {
+    opcoesDeGerente.unshift(gerenteAtual)
+  }
   const cadastrandoCliente = useWatch({ control, name: 'cliente' }) === NOVO_CLIENTE
 
   const submeter = async ({ novoCliente, ...dados }) => {
@@ -140,6 +160,37 @@ function CamposFormulario({
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
           </CampoFormulario>
+
+          {ehGerente ? (
+            <>
+              <input type="hidden" {...register('gerenteId')} />
+              <CampoFormulario
+                id="gerente-projeto"
+                rotulo="Gerente"
+                value={usuario.nome}
+                readOnly
+                ajuda="O projeto fica associado a você."
+              />
+            </>
+          ) : (
+            <CampoFormulario
+              id="gerente-projeto"
+              rotulo="Gerente"
+              tipo="select"
+              erro={errors.gerenteId}
+              ajuda="O gerente é quem vê e altera este projeto."
+              {...register('gerenteId')}
+            >
+              <option value="">Selecione</option>
+              {opcoesDeGerente.map((gerente) => (
+                <option key={gerente.id} value={gerente.id}>
+                  {gerente.nome}
+                </option>
+              ))}
+            </CampoFormulario>
+          )}
+
+          {erroDosGerentes && <Alerta>{erroDosGerentes}</Alerta>}
 
           <CampoFormulario
             id="cliente-projeto"

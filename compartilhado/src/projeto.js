@@ -51,6 +51,15 @@ export const schemaProjeto = z.object(
       .trim()
       .refine((valor) => valor === '' || z.url().safeParse(valor).success, 'Informe uma URL válida.')
       .default(''),
+    // Id do gerente de projetos. `null` só permanece em projetos antigos, ainda
+    // sem associação; criar ou alterar pela API exige um gerente (a rota confere
+    // o perfil). Um gerente autenticado é associado a si mesmo.
+    gerenteId: z
+      .string({ error: 'Informe o gerente do projeto.' })
+      .trim()
+      .min(1, 'Informe o gerente do projeto.')
+      .nullable()
+      .default(null),
   },
   { error: 'O corpo da requisição deve ser um objeto JSON com os dados do projeto.' },
 )

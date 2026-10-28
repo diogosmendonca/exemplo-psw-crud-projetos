@@ -15,6 +15,11 @@ const schemaFormularioProjeto = schemaProjeto
     novoCliente: schemaNomeCliente,
     // Texto separado por vírgulas; vira lista ao enviar.
     tecnologias: z.string(),
+    // O schema da API aceita `null` em projetos antigos. No formulário o gerente é obrigatório.
+    gerenteId: z
+      .string({ error: 'Informe o gerente do projeto.' })
+      .trim()
+      .min(1, 'Informe o gerente do projeto.'),
   })
   .superRefine((dados, contexto) => {
     if (dados.cliente === NOVO_CLIENTE && dados.novoCliente === '') {

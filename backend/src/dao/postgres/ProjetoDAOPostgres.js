@@ -17,7 +17,7 @@ function paraId(id) {
   return numero >= 1 && numero <= MAIOR_ID ? numero : null
 }
 
-/** Registro do Prisma (com o cliente incluído) → projeto no formato da API. */
+/** Registro do Prisma (com cliente e gerente incluídos) → projeto no formato da API. */
 function paraProjeto(registro) {
   return {
     id: String(registro.id),
@@ -27,10 +27,13 @@ function paraProjeto(registro) {
     descricao: registro.descricao,
     tecnologias: registro.tecnologias,
     url: registro.url,
+    gerente: registro.gerente
+      ? { id: String(registro.gerente.id), nome: registro.gerente.nome }
+      : null,
   }
 }
 
-const COM_CLIENTE = { include: { cliente: true } }
+const COM_RELACOES = { include: { cliente: true, gerente: true } }
 
 export class ProjetoDAOPostgres extends ProjetoDAO {
   /**
@@ -43,17 +46,26 @@ export class ProjetoDAOPostgres extends ProjetoDAO {
     this.clientes = clientes
   }
 
-  /** Troca `cliente: { nome }` pela chave estrangeira, criando o cliente se for novo. */
-  async #paraRegistro({ cliente, ...dados }) {
-    if (!cliente) return { ...dados, clienteId: null }
+  /** Troca `cliente: { nome }` e `gerenteId` pelas chaves estrangeiras. */
+  async #paraRegistro({ cliente, gerenteId, ...dados }) {
+    const registro = { ...dados, gerenteId: gerenteId ? Number(gerenteId) : null }
+
+    if (!cliente) return { ...registro, clienteId: null }
 
     const { id } = await this.clientes.obterOuCriar(cliente.nome)
 
-    return { ...dados, clienteId: Number(id) }
+    return { ...registro, clienteId: Number(id) }
   }
 
-  async listar() {
-    const projetos = await this.prisma.projeto.findMany({ orderBy: { id: 'asc' }, ...COM_CLIENTE })
+  async listar(gerenteId) {
+    const numero = gerenteId ? paraId(gerenteId) : undefined
+    if (gerenteId && numero === null) return []
+
+    const projetos = await this.prisma.projeto.findMany({
+      where: numero ? { gerenteId: numero } : undefined,
+      orderBy: { id: 'asc' },
+      ...COM_RELACOES,
+    })
 
     return projetos.map(paraProjeto)
   }
@@ -62,7 +74,7 @@ export class ProjetoDAOPostgres extends ProjetoDAO {
     const numero = paraId(id)
     if (numero === null) return null
 
-    const projeto = await this.prisma.projeto.findUnique({ where: { id: numero }, ...COM_CLIENTE })
+    const projeto = await this.prisma.projeto.findUnique({ where: { id: numero }, ...COM_RELACOES })
 
     return projeto ? paraProjeto(projeto) : null
   }
@@ -70,7 +82,7 @@ export class ProjetoDAOPostgres extends ProjetoDAO {
   async criar(dados) {
     const projeto = await this.prisma.projeto.create({
       data: await this.#paraRegistro(dados),
-      ...COM_CLIENTE,
+      ...COM_RELACOES,
     })
 
     return paraProjeto(projeto)
@@ -86,7 +98,7 @@ export class ProjetoDAOPostgres extends ProjetoDAO {
       const projeto = await this.prisma.projeto.update({
         where: { id: numero },
         data: await this.#paraRegistro(dados),
-        ...COM_CLIENTE,
+        ...COM_RELACOES,
       })
 
       return paraProjeto(projeto)
@@ -104,5 +116,14 @@ export class ProjetoDAOPostgres extends ProjetoDAO {
     const { count } = await this.prisma.projeto.deleteMany({ where: { id: numero } })
 
     return count > 0
+  }
+
+  async existeDoGerente(gerenteId) {
+    const numero = paraId(gerenteId)
+    if (numero === null) return false
+
+    const quantidade = await this.prisma.projeto.count({ where: { gerenteId: numero } })
+
+    return quantidade > 0
   }
 }
